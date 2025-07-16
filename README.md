@@ -65,5 +65,6 @@ python manage.py runserver
 ---
 
 Accede al proyecto en: [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+Accede a la GUI en : [http://127.0.0.1:8000/swagger](http://127.0.0.1:8000/swagger)
 
 
