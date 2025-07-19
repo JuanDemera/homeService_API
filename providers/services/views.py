@@ -1,7 +1,7 @@
 from rest_framework import generics, permissions, filters
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Category, Service
-from .serializers import CategorySerializer, ServiceSerializer, ServiceCreateSerializer
+from .serializers import CategorySerializer, ProviderServiceSerializer, ServiceCreateSerializer
 from rest_framework.exceptions import PermissionDenied
 
 class CategoryListView(generics.ListAPIView):
@@ -11,13 +11,13 @@ class CategoryListView(generics.ListAPIView):
     queryset = Category.objects.filter(is_active=True)
 
 class ServiceListView(generics.ListAPIView):
-    serializer_class = ServiceSerializer
+    serializer_class = ProviderServiceSerializer 
     permission_classes = [permissions.AllowAny]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['category', 'provider', 'is_active']
     search_fields = ['title', 'description']
     ordering_fields = ['price', 'created_at']
-    ordering = ['-created_at']  # Orden por defecto
+    ordering = ['-created_at']
 
     def get_queryset(self):
         return Service.objects.filter(is_active=True)

@@ -7,9 +7,10 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ['id', 'name', 'description', 'icon_url', 'is_active']
-        read_only_fields = fields  
+        read_only_fields = fields
+        ref_name = 'ServiceCategory' 
 
-class ServiceSerializer(serializers.ModelSerializer):
+class ProviderServiceSerializer(serializers.ModelSerializer): 
     category = CategorySerializer(read_only=True)
     category_id = serializers.PrimaryKeyRelatedField(
         queryset=Category.objects.filter(is_active=True),
@@ -26,7 +27,7 @@ class ServiceSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at', 'provider_name']
-
+        ref_name = 'ProviderService'  
     @extend_schema_field(str)
     def get_provider_name(self, obj) -> str:
         return obj.provider.user.username
@@ -44,12 +45,4 @@ class ServiceCreateSerializer(serializers.ModelSerializer):
             'title', 'description', 'category', 'price',
             'duration_minutes', 'is_active'
         ]
-
-    def validate_price(self, value):
-        if value <= 0:
-            raise serializers.ValidationError("Price must be greater than 0")
-        return value
-
-    def create(self, validated_data):
-        provider = self.context['request'].user.provider
-        return Service.objects.create(provider=provider, **validated_data)
+        ref_name = 'ServiceCreate'  
