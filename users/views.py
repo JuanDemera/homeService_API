@@ -10,27 +10,58 @@ from django.views.decorators.csrf import csrf_protect
 from core.models import User
 from .serializers import GuestSerializer, RegisterConsumerSerializer
 from .utils.otp import generate_otp
+from users.models import UserProfile
+from users.serializers import GuestSerializer
+from datetime import date
+from django.utils.dateparse import parse_date
+from rest_framework import serializers
+import traceback
+from rest_framework.throttling import AnonRateThrottle
 
-@method_decorator([never_cache, csrf_protect], name='dispatch')
+#@method_decorator([never_cache, csrf_protect], name='dispatch')
 class GuestAccessView(APIView):
     permission_classes = [AllowAny]
-    
+    throttle_classes = [AnonRateThrottle]
+
     def post(self, request):
-        with transaction.atomic():
-            last_guest = User.objects.filter(role=User.Role.GUEST).order_by('-id').first()
-            count = int(last_guest.username.replace('guest', '')) + 1 if last_guest else 1
-            username = f'guest{count:04d}'
-            
-            user = User.objects.create_user(
-                username=username,
-                phone=f'guest{count:04d}',
-                password='guestpass',
-                role=User.Role.GUEST
-            )
-            
+        try:
+            with transaction.atomic():
+                # Generar username único
+                last_guest = User.objects.filter(role=User.Role.GUEST).order_by('-id').first()
+                count = int(last_guest.username.replace('guest', '')) + 1 if last_guest else 1
+                username = f'guest{count:04d}'
+                
+                user = User.objects.create_user(
+                    username=username,
+                    phone=username,  
+                    password='guestpass',
+                    role=User.Role.GUEST
+                )
+                
+                UserProfile.objects.create(
+                    user=user,
+                    firstname=f"Guest{count}",
+                    lastname="Temp",
+                    email=f"guest{count}@temp.com",
+                    birth_date=date(2000, 1, 1),
+                )
+                
+                return Response(
+                    {
+                        "status": "success",
+                        "user": GuestSerializer(user).data,
+                        "message": "Usuario guest creado correctamente"
+                    },
+                    status=status.HTTP_201_CREATED
+                )
+
+        except Exception as e:
             return Response(
-                GuestSerializer(user).data, 
-                status=status.HTTP_201_CREATED
+                {
+                    "status": "error",
+                    "message": "Error en el servidor"
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 class SendOTPView(APIView):

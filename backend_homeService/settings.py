@@ -107,6 +107,9 @@ DATABASES = {
 
 # Django REST Framework + JWT
 REST_FRAMEWORK = {
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '5/hour', 
+    },
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),

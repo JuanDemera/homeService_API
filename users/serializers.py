@@ -11,6 +11,12 @@ class UserProfileSerializer(serializers.ModelSerializer):
         fields = ['firstname', 'lastname', 'email', 'cedula', 'birth_date', 'edad']
         read_only_fields = ['edad']
 
+class GuestProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ['firstname', 'lastname', 'email']
+        read_only_fields = ['email']
+
 class GuestSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
