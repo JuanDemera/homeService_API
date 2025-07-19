@@ -1,7 +1,8 @@
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
+from decimal import Decimal
 from .models import Cart, CartItem
 from providers.services.models import Service
-
 
 class ServiceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -19,18 +20,12 @@ class CartItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CartItem
-        fields = [
-            'id', 
-            'service', 
-            'service_id', 
-            'quantity', 
-            'added_at',
-            'total_price'
-        ]
+        fields = ['id', 'service', 'service_id', 'quantity', 'added_at', 'total_price']
         read_only_fields = ['added_at']
 
-    def get_total_price(self, obj):
-        return obj.service.price * obj.quantity
+    @extend_schema_field(Decimal)
+    def get_total_price(self, obj) -> Decimal:
+        return obj.total_price
 
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True, read_only=True)
@@ -39,18 +34,13 @@ class CartSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Cart
-        fields = [
-            'id', 
-            'created_at', 
-            'updated_at',
-            'items',
-            'total_items',
-            'subtotal'
-        ]
+        fields = ['id', 'created_at', 'updated_at', 'items', 'total_items', 'subtotal']
         read_only_fields = fields
 
-    def get_total_items(self, obj):
-        return obj.items.count()
+    @extend_schema_field(int)
+    def get_total_items(self, obj) -> int:
+        return obj.total_items
 
-    def get_subtotal(self, obj):
-        return sum(item.service.price * item.quantity for item in obj.items.all())
+    @extend_schema_field(Decimal)
+    def get_subtotal(self, obj) -> Decimal:
+        return obj.subtotal

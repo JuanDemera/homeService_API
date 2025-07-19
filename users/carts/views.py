@@ -13,41 +13,25 @@ class CartDetailView(generics.RetrieveAPIView):
     serializer_class = CartSerializer
     permission_classes = [IsAuthenticated]
     
-    @method_decorator(cache_page(60 * 2))  # Cache por 2 minutos
+    @method_decorator(cache_page(60 * 2))
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
     
     def get_object(self):
-        cart = Cart.objects.filter(user=self.request.user).first()
-        if not cart:
-            raise NotFound({'error': 'Carrito no encontrado'})
+        cart, created = Cart.objects.get_or_create(user=self.request.user)
         return cart
 
-class AddToCartView(generics.GenericAPIView):
+class AddToCartView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = CartItemSerializer
     
-    def post(self, request):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        
-        service_id = serializer.validated_data['service'].id
+    def perform_create(self, serializer):
+        cart = Cart.objects.get_or_create(user=self.request.user)[0]
+        service = serializer.validated_data['service']
         quantity = serializer.validated_data.get('quantity', 1)
         
-        cart = Cart.objects.filter(user=request.user).first()
-        if not cart:
-            raise NotFound({'error': 'Carrito no encontrado'})
-        
-        try:
-            service = Service.objects.select_for_update().get(id=service_id)
-        except Service.DoesNotExist:
-            raise NotFound({'error': 'Servicio no encontrado'})
-        
         if not service.is_available:
-            return Response(
-                {'error': 'Este servicio no está disponible actualmente'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            raise PermissionDenied('Este servicio no está disponible actualmente')
         
         with transaction.atomic():
             item, created = CartItem.objects.get_or_create(
@@ -59,33 +43,27 @@ class AddToCartView(generics.GenericAPIView):
             if not created:
                 item.quantity += quantity
                 item.save()
-        
-        return Response(
-            {'message': 'Servicio agregado al carrito'},
-            status=status.HTTP_200_OK
-        )
 
 class RemoveFromCartView(generics.DestroyAPIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = CartItemSerializer
     
-    def delete(self, request, *args, **kwargs):
-        service_id = request.data.get('service_id')
-        if not service_id:
-            return Response(
-                {'error': 'service_id es requerido'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+    def get_object(self):
+        cart = Cart.objects.get(user=self.request.user)
+        service_id = self.request.data.get('service_id')
         
-        cart = Cart.objects.filter(user=request.user).first()
-        if not cart:
-            raise NotFound({'error': 'Carrito no encontrado'})
+        if not service_id:
+            raise serializers.ValidationError({'service_id': 'Este campo es requerido'})
         
         try:
-            item = CartItem.objects.get(cart=cart, service_id=service_id)
-            item.delete()
-            return Response(
-                {'message': 'Servicio eliminado del carrito'},
-                status=status.HTTP_200_OK
-            )
+            return CartItem.objects.get(cart=cart, service_id=service_id)
         except CartItem.DoesNotExist:
-            raise NotFound({'error': 'Servicio no encontrado en el carrito'})
+            raise NotFound('Servicio no encontrado en el carrito')
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response(
+            {'message': 'Servicio eliminado del carrito'},
+            status=status.HTTP_200_OK
+        )
