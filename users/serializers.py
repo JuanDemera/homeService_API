@@ -17,22 +17,56 @@ class GuestProfileSerializer(serializers.ModelSerializer):
         fields = ['firstname', 'lastname', 'email']
         read_only_fields = ['email']
 
-class GuestSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'role']
+        fields = ['id', 'username', 'phone', 'role']
+
+class GuestSerializer(serializers.ModelSerializer):
+    profile = GuestProfileSerializer()  
+    
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'phone', 'role', 'profile']
+        read_only_fields = fields
+        extra_kwargs = {
+            'username': {'required': False},
+            'role': {'read_only': True}
+        }
+
+class OTPSerializer(serializers.Serializer):
+    phone = serializers.CharField(required=True)
+
+    def validate_phone(self, value):
+        try:
+            phone = phonenumbers.parse(value, None)
+            if not phonenumbers.is_valid_number(phone):
+                raise serializers.ValidationError("Número de teléfono inválido")
+            return phonenumbers.format_number(phone, phonenumbers.PhoneNumberFormat.E164)
+        except Exception as e:
+            raise serializers.ValidationError("Ingresa un número de teléfono válido")
+
+class VerifyOTPSerializer(OTPSerializer):  
+    otp = serializers.CharField(required=True, min_length=4, max_length=6)
+
+    def validate_otp(self, value):
+        if not value.isdigit():
+            raise serializers.ValidationError("El código OTP debe contener solo números")
+        return value
 
 class RegisterConsumerSerializer(serializers.ModelSerializer):
-    firstname = serializers.CharField(max_length=100)
-    lastname = serializers.CharField(max_length=100)
-    email = serializers.CharField()
-    cedula = serializers.CharField(max_length=20)
-    birth_date = serializers.DateField()
+    firstname = serializers.CharField(max_length=100, write_only=True)
+    lastname = serializers.CharField(max_length=100, write_only=True)
+    email = serializers.EmailField(write_only=True)
+    cedula = serializers.CharField(max_length=20, write_only=True)
+    birth_date = serializers.DateField(write_only=True)
 
     class Meta:
         model = User
         fields = ['username', 'phone', 'password', 'firstname', 'lastname', 'email', 'cedula', 'birth_date']
-        extra_kwargs = {'password': {'write_only': True}}
+        extra_kwargs = {
+            'password': {'write_only': True},
+        }
 
     def validate_phone(self, value):
         try:
@@ -46,6 +80,8 @@ class RegisterConsumerSerializer(serializers.ModelSerializer):
     def validate_email(self, value):
         try:
             validate_email(value)
+            if UserProfile.objects.filter(email__iexact=value).exists():
+                raise serializers.ValidationError("Este email ya está registrado")
             return value.lower()
         except ValidationError:
             raise serializers.ValidationError("Email inválido")
@@ -53,6 +89,8 @@ class RegisterConsumerSerializer(serializers.ModelSerializer):
     def validate_cedula(self, value):
         if not value.isdigit():
             raise serializers.ValidationError("La cédula debe contener solo números")
+        if UserProfile.objects.filter(cedula=value).exists():
+            raise serializers.ValidationError("Esta cédula ya está registrada")
         return value
 
     def create(self, validated_data):
@@ -74,25 +112,3 @@ class RegisterConsumerSerializer(serializers.ModelSerializer):
         
         UserProfile.objects.create(user=user, **profile_data)
         return user
-
-class OTPSerializer(serializers.Serializer):
-    phone = serializers.CharField(required=True)
-
-    def validate_phone(self, value):
-        """Valida y formatea el teléfono internacionalmente"""
-        try:
-            phone = phonenumbers.parse(value, None)
-            if not phonenumbers.is_valid_number(phone):
-                raise serializers.ValidationError("Número de teléfono inválido")
-            return phonenumbers.format_number(phone, phonenumbers.PhoneNumberFormat.E164)
-        except Exception as e:
-            raise serializers.ValidationError("Ingresa un número de teléfono válido")
-
-class VerifyOTPSerializer(OTPSerializer):  
-    otp = serializers.CharField(required=True, min_length=4, max_length=6)
-
-    def validate_otp(self, value):
-        """Valida que el OTP sea numérico"""
-        if not value.isdigit():
-            raise serializers.ValidationError("El código OTP debe contener solo números")
-        return value

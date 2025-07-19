@@ -16,8 +16,10 @@ class ProviderSerializer(serializers.ModelSerializer):
             'verified_at', 'created_at'
         ]
         read_only_fields = fields
+        ref_name = 'DetailedProvider'  
 
-    def get_full_name(self, obj):
+   
+    def get_full_name(self, obj) -> str: 
         if hasattr(obj.user, 'profile'):
             return f"{obj.user.profile.firstname} {obj.user.profile.lastname}"
         return ""
@@ -27,18 +29,14 @@ class ProviderRegisterSerializer(serializers.ModelSerializer):
         model = Provider
         fields = ['bio']
         extra_kwargs = {'bio': {'required': False}}
+        ref_name = 'ProviderRegistration'
 
     def create(self, validated_data):
         user = self.context['request'].user
         if hasattr(user, 'provider'):
             raise serializers.ValidationError("User is already a provider")
         
-        provider = Provider.objects.create(
-            user=user,
-            **validated_data
-        )
-        # El usuario sigue siendo 'guest' hasta ser aprobado
-        return provider
+        return Provider.objects.create(user=user, **validated_data)
 
 class ProviderVerificationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -47,6 +45,7 @@ class ProviderVerificationSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'rejection_reason': {'required': False}
         }
+        ref_name = 'ProviderVerification'
 
     def validate(self, data):
         if data.get('verification_status') == 'rejected' and not data.get('rejection_reason'):

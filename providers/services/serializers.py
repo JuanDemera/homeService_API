@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from drf_spectacular.utils import extend_schema_field
 from decimal import Decimal
 from .models import Category, Service
 
@@ -28,7 +27,7 @@ class ProviderServiceSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['created_at', 'updated_at', 'provider_name']
         ref_name = 'ProviderService'  
-    @extend_schema_field(str)
+    
     def get_provider_name(self, obj) -> str:
         return obj.provider.user.username
 

@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from decimal import Decimal
-from drf_spectacular.utils import extend_schema_field
 from .models import ProviderPayment
 
 class ProviderPaymentSerializer(serializers.ModelSerializer):
@@ -22,7 +21,7 @@ class PaymentSimulationSerializer(serializers.Serializer):
     cart_id = serializers.IntegerField(min_value=1)
     payment_method = serializers.CharField(max_length=50)
 
-    @extend_schema_field(str)
+    
     def validate_cart_id(self, value):
         from carts.models import Cart
         if not Cart.objects.filter(id=value).exists():
