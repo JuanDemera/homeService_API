@@ -2,31 +2,32 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
-from django.core.cache import cache
+from rest_framework.throttling import AnonRateThrottle
 from django.db import transaction
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
-from core.models import User
-from .serializers import GuestSerializer, RegisterConsumerSerializer
-from .utils.otp import generate_otp
-from users.models import UserProfile
-from users.serializers import GuestSerializer
 from datetime import date
-from django.utils.dateparse import parse_date
-from rest_framework import serializers
-import traceback
-from rest_framework.throttling import AnonRateThrottle
+from django.core.cache import cache
+from .serializers import (
+    GuestSerializer,
+    OTPSerializer,
+    VerifyOTPSerializer,
+    RegisterConsumerSerializer
+)
+from core.models import User
+from users.models import UserProfile
+from users.utils.otp import generate_otp
 
-#@method_decorator([never_cache, csrf_protect], name='dispatch')
+@method_decorator([never_cache, csrf_protect], name='dispatch')
 class GuestAccessView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [AnonRateThrottle]
+    serializer_class = None 
 
     def post(self, request):
         try:
             with transaction.atomic():
-                # Generar username único
                 last_guest = User.objects.filter(role=User.Role.GUEST).order_by('-id').first()
                 count = int(last_guest.username.replace('guest', '')) + 1 if last_guest else 1
                 username = f'guest{count:04d}'
@@ -54,59 +55,57 @@ class GuestAccessView(APIView):
                     },
                     status=status.HTTP_201_CREATED
                 )
-
         except Exception as e:
             return Response(
-                {
-                    "status": "error",
-                    "message": "Error en el servidor"
-                },
+                {"status": "error", "message": "Error en el servidor"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 class SendOTPView(APIView):
     permission_classes = [AllowAny]
-    
+    serializer_class = OTPSerializer
+
     def post(self, request):
-        phone = request.data.get('phone')
-        if not phone:
-            return Response(
-                {'error': 'El teléfono es requerido'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)  # Valida automáticamente (retorna 400 si falla)
         
-        otp = generate_otp()
+        phone = serializer.validated_data['phone']
         cache_key = f'otp_{phone}'
         
+        # Verifica si ya existe un OTP activo
         if cache.get(cache_key):
             return Response(
-                {'error': 'Ya se ha enviado un código. Intenta más tarde.'},
+                {'error': 'Ya se ha enviado un código. Espera 5 minutos.'},
                 status=status.HTTP_429_TOO_MANY_REQUESTS
             )
         
-        cache.set(cache_key, otp, timeout=300)
+        # Genera y almacena el OTP
+        otp = generate_otp()  # Usamos tu función
+        cache.set(cache_key, otp, timeout=300)  # 5 minutos de expiración
+        
+        # En producción, aquí iría el envío real por SMS/Email
+        print(f"OTP para {phone}: {otp}")  # Solo para desarrollo
+        
         return Response(
-            {'otp': otp, 'expires_in': 300}, 
+            {'message': 'Código OTP enviado', 'expires_in': 300},
             status=status.HTTP_200_OK
         )
 
 class VerifyOTPView(APIView):
     permission_classes = [AllowAny]
-    
-    def post(self, request):
-        phone = request.data.get('phone')
-        otp_input = request.data.get('otp')
-        otp_real = cache.get(f'otp_{phone}')
+    serializer_class = VerifyOTPSerializer
 
-        if not all([phone, otp_input]):
-            return Response(
-                {'error': 'Teléfono y OTP son requeridos'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        phone = serializer.validated_data['phone']
+        otp_input = serializer.validated_data['otp']
+        otp_real = cache.get(f'otp_{phone}')
 
         if otp_input != otp_real:
             return Response(
-                {'error': 'OTP inválido'}, 
+                {'error': 'Código OTP incorrecto o expirado'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -121,7 +120,6 @@ class VerifyOTPView(APIView):
             user.is_verified = True
             user.role = User.Role.CONSUMER
             user.save()
-            
             cache.delete(f'otp_{phone}')
             
             return Response(
@@ -136,9 +134,10 @@ class VerifyOTPView(APIView):
 
 class RegisterConsumerView(APIView):
     permission_classes = [AllowAny]
-    
+    serializer_class = RegisterConsumerSerializer 
+
     def post(self, request):
-        serializer = RegisterConsumerSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(

@@ -74,3 +74,25 @@ class RegisterConsumerSerializer(serializers.ModelSerializer):
         
         UserProfile.objects.create(user=user, **profile_data)
         return user
+
+class OTPSerializer(serializers.Serializer):
+    phone = serializers.CharField(required=True)
+
+    def validate_phone(self, value):
+        """Valida y formatea el teléfono internacionalmente"""
+        try:
+            phone = phonenumbers.parse(value, None)
+            if not phonenumbers.is_valid_number(phone):
+                raise serializers.ValidationError("Número de teléfono inválido")
+            return phonenumbers.format_number(phone, phonenumbers.PhoneNumberFormat.E164)
+        except Exception as e:
+            raise serializers.ValidationError("Ingresa un número de teléfono válido")
+
+class VerifyOTPSerializer(OTPSerializer):  
+    otp = serializers.CharField(required=True, min_length=4, max_length=6)
+
+    def validate_otp(self, value):
+        """Valida que el OTP sea numérico"""
+        if not value.isdigit():
+            raise serializers.ValidationError("El código OTP debe contener solo números")
+        return value
