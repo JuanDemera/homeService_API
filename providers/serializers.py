@@ -1,53 +1,53 @@
 from rest_framework import serializers
-from core.serializers import UserSerializer, UserProfileSerializer
+from core.models import User
+from users.models import UserProfile
 from .models import Provider
 
-class ProviderSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
-    profile = UserProfileSerializer(source='user.profile', read_only=True)
-    full_name = serializers.SerializerMethodField()
-    verification_status = serializers.CharField(read_only=True)
+class ProviderRegisterUserSerializer(serializers.Serializer):
+    phone = serializers.CharField(max_length=15, required=True)
+    password = serializers.CharField(write_only=True, required=True, min_length=8)
 
-    class Meta:
-        model = Provider
-        fields = [
-            'id', 'user', 'profile', 'full_name', 'bio', 'rating',
-            'total_completed_services', 'is_active', 'verification_status',
-            'verified_at', 'created_at'
-        ]
-        read_only_fields = fields
-        ref_name = 'DetailedProvider'  
-
-   
-    def get_full_name(self, obj) -> str: 
-        if hasattr(obj.user, 'profile'):
-            return f"{obj.user.profile.firstname} {obj.user.profile.lastname}"
-        return ""
+class ProviderRegisterProfileSerializer(serializers.Serializer):
+    firstname = serializers.CharField(max_length=50, required=True)
+    lastname = serializers.CharField(max_length=50, required=True)
+    cedula = serializers.CharField(max_length=20, required=True)
+    email = serializers.EmailField(required=False)
+    birth_date = serializers.DateField(required=False)
 
 class ProviderRegisterSerializer(serializers.ModelSerializer):
+    user = ProviderRegisterUserSerializer(required=True)
+    profile = ProviderRegisterProfileSerializer(required=True)
+    documents = serializers.JSONField(required=False)
+
     class Meta:
         model = Provider
-        fields = ['bio']
+        fields = ['user', 'profile', 'documents', 'bio']
         extra_kwargs = {'bio': {'required': False}}
-        ref_name = 'ProviderRegistration'
 
-    def create(self, validated_data):
-        user = self.context['request'].user
-        if hasattr(user, 'provider'):
-            raise serializers.ValidationError("User is already a provider")
+    def validate_phone(self, value):
+        if User.objects.filter(phone=value).exists():
+            raise serializers.ValidationError("Este teléfono ya está registrado")
+        return value
+
+    def validate_identification(self, value):
+        if UserProfile.objects.filter(identification=value).exists():
+            raise serializers.ValidationError("Esta cédula ya está registrada")
+        return value
+
+class ProviderVerificationRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Provider
+        fields = ['verification_documents']
         
-        return Provider.objects.create(user=user, **validated_data)
+    def validate_verification_documents(self, value):
+        if not value:
+            raise serializers.ValidationError("Debe enviar al menos un documento")
+        return value
 
 class ProviderVerificationSerializer(serializers.ModelSerializer):
+    action = serializers.CharField(required=True)
+    reason = serializers.CharField(required=False)
+
     class Meta:
         model = Provider
-        fields = ['verification_status', 'rejection_reason']
-        extra_kwargs = {
-            'rejection_reason': {'required': False}
-        }
-        ref_name = 'ProviderVerification'
-
-    def validate(self, data):
-        if data.get('verification_status') == 'rejected' and not data.get('rejection_reason'):
-            raise serializers.ValidationError("Debe proporcionar una razón para el rechazo")
-        return data
+        fields = ['action', 'reason']

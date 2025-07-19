@@ -9,6 +9,8 @@ from users.models import UserProfile
 from users.serializers import GuestSerializer, RegisterConsumerSerializer
 from .utils.otp import generate_otp
 from datetime import date
+from rest_framework_simplejwt.tokens import RefreshToken
+from drf_yasg.utils import swagger_auto_schema
 
 class GuestAccessView(APIView):
     permission_classes = [AllowAny]
@@ -36,10 +38,18 @@ class GuestAccessView(APIView):
                     birth_date=date(2000, 1, 1),
                 )
                 
+                # Generar tokens JWT
+                refresh = RefreshToken.for_user(user)
+                access_token = str(refresh.access_token)
+                
                 return Response(
                     {
                         "status": "success",
                         "user": GuestSerializer(user).data,
+                        "tokens": {
+                            "access": access_token,
+                            "refresh": str(refresh)
+                        },
                         "message": "Usuario guest creado correctamente"
                     },
                     status=status.HTTP_201_CREATED
@@ -54,7 +64,6 @@ class GuestAccessView(APIView):
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-        
 class SendOTPView(APIView):
     permission_classes = [AllowAny]
     
@@ -123,7 +132,12 @@ class VerifyOTPView(APIView):
 
 class RegisterConsumerView(APIView):
     permission_classes = [AllowAny]
-    
+
+    @swagger_auto_schema(
+        request_body=RegisterConsumerSerializer,
+        operation_description="Registra un nuevo usuario consumidor con los datos requeridos."
+    )
+
     def post(self, request):
         serializer = RegisterConsumerSerializer(data=request.data)
         if serializer.is_valid():

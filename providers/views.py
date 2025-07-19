@@ -1,73 +1,143 @@
-from rest_framework import generics, permissions, status
+from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework.exceptions import PermissionDenied
-from django.utils import timezone
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
+from django.db import transaction
+from core.models import User
+from users.models import UserProfile
 from .models import Provider
+from datetime import date
 from .serializers import (
-    ProviderSerializer,
     ProviderRegisterSerializer,
+    ProviderVerificationRequestSerializer,
     ProviderVerificationSerializer
 )
-
-class ProviderDetailView(generics.RetrieveAPIView):
-    queryset = Provider.objects.all()
-    serializer_class = ProviderSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    lookup_field = 'user__username'
+from rest_framework_simplejwt.tokens import RefreshToken
 
 class ProviderRegisterView(generics.CreateAPIView):
+    """
+    Registro inicial de proveedores (sin autenticación requerida)
+    Campos obligatorios: teléfono, cédula, nombres, apellidos
+    Campos opcionales: documentos (fotos de cédula)
+    """
     serializer_class = ProviderRegisterSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [AllowAny]
 
-    def perform_create(self, serializer):
-        if self.request.user.role != 'guest':
-            raise PermissionDenied("Only guest users can register as providers")
-        serializer.save()
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        # Datos del formulario
+        user_data = serializer.validated_data.pop('user')
+        profile_data = serializer.validated_data.pop('profile')
+        documents = serializer.validated_data.pop('documents', {})
+        
+        # Crear usuario
+        user = User.objects.create_user(
+            username=user_data['phone'],
+            phone=user_data['phone'],
+            password=user_data['password'],
+            role=User.Role.PROVIDER
+        )
+        
+        # Crear perfil
+        UserProfile.objects.create(
+            user=user,
+            firstname=profile_data['firstname'],
+            lastname=profile_data['lastname'],
+            email=profile_data.get('email', f"{user_data['phone']}@temp.com"),
+            cedula=profile_data['cedula'],
+            birth_date=profile_data.get('birth_date', date(2000, 1, 1))
+        )
+        
+        # Crear proveedor
+        provider = Provider.objects.create(
+            user=user,
+            verification_documents=documents,  # Puede ser vacío inicialmente
+            verification_status=Provider.VerificationStatus.PENDING
+        )
+        
+        # Generar tokens
+        refresh = RefreshToken.for_user(user)
+        
+        return Response({
+            "status": "success",
+            "user": {
+                "phone": user.phone,
+                "role": user.role,
+                "verification_status": provider.verification_status
+            },
+            "tokens": {
+                "access": str(refresh.access_token),
+                "refresh": str(refresh)
+            },
+            "message": "Registro exitoso. Complete su verificación para habilitar todas las funciones"
+        }, status=status.HTTP_201_CREATED)
 
-class ProviderVerificationView(generics.UpdateAPIView):
+class ProviderVerificationRequestView(generics.UpdateAPIView):
+    """
+    Vista para que el proveedor envíe/actualice sus documentos de verificación
+    """
+    serializer_class = ProviderVerificationRequestSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user.provider
+
+    def update(self, request, *args, **kwargs):
+        provider = self.get_object()
+        if provider.user != request.user:
+            return Response(
+                {"error": "No autorizado"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        serializer = self.get_serializer(provider, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        # Actualizar documentos y cambiar estado a PENDING
+        provider = serializer.save()
+        provider.verification_status = Provider.VerificationStatus.PENDING
+        provider.save()
+        
+        return Response({
+            "status": "success",
+            "message": "Documentos enviados para verificación",
+            "verification_status": provider.verification_status
+        })
+
+class ProviderVerificationAdminView(generics.UpdateAPIView):
+    """
+    Vista para que el admin apruebe/rechace proveedores
+    """
     queryset = Provider.objects.all()
     serializer_class = ProviderVerificationSerializer
-    permission_classes = [permissions.IsAdminUser]
-    lookup_field = 'user__username'
+    permission_classes = [IsAdminUser]
+    lookup_field = 'user__phone'
 
-    def perform_update(self, serializer):
-        provider = serializer.save()
-        action = self.request.data.get('action')
+    def update(self, request, *args, **kwargs):
+        provider = self.get_object()
+        action = request.data.get('action')
         
         if action == 'approve':
-            provider.approve_provider(self.request.user)
+            provider.verification_status = Provider.VerificationStatus.APPROVED
+            provider.user.role = User.Role.PROVIDER  # Cambiar rol definitivo
+            provider.user.save()
+            provider.save()
+            message = "Proveedor aprobado exitosamente"
         elif action == 'reject':
-            provider.reject_provider(
-                reason=self.request.data.get('rejection_reason'),
-                rejected_by=self.request.user
-            )
-        elif action == 'suspend':
-            provider.suspend_provider(
-                reason=self.request.data.get('rejection_reason'),
-                suspended_by=self.request.user
-            )
-
-class ProviderAvailabilityView(generics.UpdateAPIView):
-    """Vista para activar/desactivar disponibilidad"""
-    queryset = Provider.objects.all()
-    serializer_class = ProviderSerializer
-    permission_classes = [permissions.IsAdminUser]
-    lookup_field = 'user__username'
-
-    def patch(self, request, *args, **kwargs):
-        provider = self.get_object()
-        is_active = request.data.get('is_active', False)
-        
-        if not provider.verification_status == Provider.VerificationStatus.APPROVED:
+            provider.verification_status = Provider.VerificationStatus.REJECTED
+            provider.rejection_reason = request.data.get('reason', '')
+            provider.save()
+            message = "Proveedor rechazado"
+        else:
             return Response(
-                {'error': 'El proveedor debe estar aprobado para cambiar disponibilidad'},
+                {"error": "Acción no válida"}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        provider.is_active = is_active
-        provider.save()
-        
-        return Response(
-            {'status': f'Disponibilidad {"activada" if is_active else "desactivada"} correctamente'},
-            status=status.HTTP_200_OK
-        )
+        return Response({
+            "status": "success",
+            "message": message,
+            "verification_status": provider.verification_status
+        })
