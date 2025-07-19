@@ -19,7 +19,7 @@ from core.models import User
 from users.models import UserProfile
 from users.utils.otp import generate_otp
 
-@method_decorator([never_cache, csrf_protect], name='dispatch')
+#@method_decorator([never_cache, csrf_protect], name='dispatch')
 class GuestAccessView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [AnonRateThrottle]
