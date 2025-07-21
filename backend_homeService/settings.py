@@ -11,32 +11,29 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 import os
-from datetime import timedelta
 from pathlib import Path
+from datetime import timedelta
 from decouple import config
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Alternancia entre entornos
 ENVIRONMENT = os.getenv('DJANGO_ENV', 'development')
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = config('SECRET_KEY')
 
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = ENVIRONMENT == 'development'
 
 if DEBUG:
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.ngrok.io','.ngrok-free.app']
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.ngrok.io', '.ngrok-free.app']
 else:
-    ALLOWED_HOSTS = []
+    ALLOWED_HOSTS = ['.ngrok-free.app']
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.ngrok-free.app',
+]
 
-# Application definition
-
+# Apps instaladas
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -44,10 +41,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
-    'drf_yasg',
 
-    # Django REST + JWT
+    # Terceros
+    'drf_yasg',
     'rest_framework',
     'rest_framework_simplejwt',
 
@@ -60,7 +56,6 @@ INSTALLED_APPS = [
     'providers.payments',
     'providers.services',
     'providers.fee_policies',
-    
 ]
 
 MIDDLEWARE = [
@@ -92,10 +87,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'backend_homeService.wsgi.application'
 
-
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
+# Base de datos
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -107,24 +99,16 @@ DATABASES = {
     }
 }
 
-# Django REST Framework + JWT
+# DRF y JWT
 REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '5/hour', 
+        'anon': '5/hour',
     },
     'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.SessionAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
-    
-}
-
-
-
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-    }
 }
 
 SIMPLE_JWT = {
@@ -136,28 +120,20 @@ SIMPLE_JWT = {
 # Modelo de usuario personalizado
 AUTH_USER_MODEL = 'core.User'
 
+# Cache local
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    }
+}
 
-# Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
-
+# Validaciones de contraseña
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
-
-
-# Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
 
 # Idioma y zona horaria Ecuador
 LANGUAGE_CODE = 'es-ec'
@@ -165,10 +141,9 @@ TIME_ZONE = 'America/Guayaquil'
 USE_I18N = True
 USE_TZ = True
 
-# Archivos estáticos
+STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATIC_URL = 'static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']  # opcional si tienes archivos estáticos
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]  # solo si tienes archivos estáticos propios
 
-# Tipo de campo para claves primarias
+# Clave por defecto para campos AutoField
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
