@@ -16,7 +16,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 class ProviderRegisterView(generics.CreateAPIView):
     """
     Registro inicial de proveedores (sin autenticación requerida)
-    Campos obligatorios: teléfono, cédula, nombres, apellidos
+    Campos obligatorios: username, teléfono, cédula, nombres, apellidos
     Campos opcionales: documentos (fotos de cédula)
     """
     serializer_class = ProviderRegisterSerializer
@@ -26,20 +26,20 @@ class ProviderRegisterView(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         # Datos del formulario
         user_data = serializer.validated_data.pop('user')
         profile_data = serializer.validated_data.pop('profile')
         documents = serializer.validated_data.pop('documents', {})
-        
+
         # Crear usuario
         user = User.objects.create_user(
-            username=user_data['phone'],
+            username=user_data['username'],
             phone=user_data['phone'],
             password=user_data['password'],
             role=User.Role.PROVIDER
         )
-        
+
         # Crear perfil
         UserProfile.objects.create(
             user=user,
@@ -49,20 +49,22 @@ class ProviderRegisterView(generics.CreateAPIView):
             cedula=profile_data['cedula'],
             birth_date=profile_data.get('birth_date', date(2000, 1, 1))
         )
-        
+
         # Crear proveedor
         provider = Provider.objects.create(
             user=user,
-            verification_documents=documents,  # Puede ser vacío inicialmente
-            verification_status=Provider.VerificationStatus.PENDING
+            verification_documents=documents,
+            verification_status=Provider.VerificationStatus.PENDING,
+            bio=serializer.validated_data.get('bio', "")
         )
-        
+
         # Generar tokens
         refresh = RefreshToken.for_user(user)
-        
+
         return Response({
             "status": "success",
             "user": {
+                "username": user.username,
                 "phone": user.phone,
                 "role": user.role,
                 "verification_status": provider.verification_status

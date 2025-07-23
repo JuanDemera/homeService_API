@@ -4,6 +4,7 @@ from users.models import UserProfile
 from .models import Provider
 
 class ProviderRegisterUserSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=150, required=True)
     phone = serializers.CharField(max_length=15, required=True)
     password = serializers.CharField(write_only=True, required=True, min_length=8)
 
