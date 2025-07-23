@@ -1,7 +1,7 @@
 from rest_framework import generics, permissions, filters
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Category, Service
-from .serializers import CategorySerializer, ProviderServiceSerializer, ServiceCreateSerializer
+from .serializers import CategorySerializer, ProviderServiceSerializer, ServiceCreateSerializer, CategoryCreateSerializer
 from rest_framework.exceptions import PermissionDenied
 
 class CategoryListView(generics.ListAPIView):
@@ -33,3 +33,8 @@ class ServiceCreateView(generics.CreateAPIView):
                 code="not_provider"
             )
         serializer.save(provider=self.request.user.provider)
+
+class CategoryCreateView(generics.CreateAPIView):
+    serializer_class = CategoryCreateSerializer
+    permission_classes = [permissions.IsAdminUser]  # Solo admin puede crear
+    queryset = Category.objects.all()

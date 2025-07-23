@@ -44,4 +44,9 @@ class ServiceCreateSerializer(serializers.ModelSerializer):
             'title', 'description', 'category', 'price',
             'duration_minutes', 'is_active'
         ]
-        ref_name = 'ServiceCreate'  
+        ref_name = 'ServiceCreate'
+
+class CategoryCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['name', 'description', 'icon_url', 'is_active']
