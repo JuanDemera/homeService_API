@@ -38,13 +38,15 @@ class OTPSerializer(serializers.Serializer):
     phone = serializers.CharField(required=True)
 
     def validate_phone(self, value):
+        print("Número recibido:", value)  # Para debug
         try:
             phone = phonenumbers.parse(value, None)
             if not phonenumbers.is_valid_number(phone):
                 raise serializers.ValidationError("Número de teléfono inválido")
             return phonenumbers.format_number(phone, phonenumbers.PhoneNumberFormat.E164)
         except Exception as e:
-            raise serializers.ValidationError("Ingresa un número de teléfono válido")
+            print("Error phonenumbers:", e)  # Para debug
+            raise serializers.ValidationError("Número de teléfono inválido")
 
 class VerifyOTPSerializer(OTPSerializer):  
     otp = serializers.CharField(required=True, min_length=4, max_length=6)
@@ -69,12 +71,14 @@ class RegisterConsumerSerializer(serializers.ModelSerializer):
         }
 
     def validate_phone(self, value):
+        print("Número recibido:", value)  # Para debug
         try:
             phone = phonenumbers.parse(value, None)
             if not phonenumbers.is_valid_number(phone):
                 raise serializers.ValidationError("Número de teléfono inválido")
             return phonenumbers.format_number(phone, phonenumbers.PhoneNumberFormat.E164)
-        except:
+        except Exception as e:
+            print("Error phonenumbers:", e)  # Para debug
             raise serializers.ValidationError("Número de teléfono inválido")
 
     def validate_email(self, value):
