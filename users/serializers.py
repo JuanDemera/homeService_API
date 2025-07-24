@@ -62,23 +62,25 @@ class RegisterConsumerSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(write_only=True)
     cedula = serializers.CharField(max_length=20, write_only=True)
     birth_date = serializers.DateField(write_only=True)
+    photo = serializers.URLField(required=False, allow_null=True)
 
     class Meta:
         model = User
-        fields = ['username', 'phone', 'password', 'firstname', 'lastname', 'email', 'cedula', 'birth_date']
+        fields = [
+            'username', 'phone', 'password', 'firstname', 'lastname',
+            'email', 'cedula', 'birth_date', 'photo'
+        ]
         extra_kwargs = {
             'password': {'write_only': True},
         }
 
     def validate_phone(self, value):
-        print("Número recibido:", value)  # Para debug
         try:
             phone = phonenumbers.parse(value, None)
             if not phonenumbers.is_valid_number(phone):
                 raise serializers.ValidationError("Número de teléfono inválido")
             return phonenumbers.format_number(phone, phonenumbers.PhoneNumberFormat.E164)
         except Exception as e:
-            print("Error phonenumbers:", e)  # Para debug
             raise serializers.ValidationError("Número de teléfono inválido")
 
     def validate_email(self, value):
@@ -104,6 +106,7 @@ class RegisterConsumerSerializer(serializers.ModelSerializer):
             'email': validated_data.pop('email'),
             'cedula': validated_data.pop('cedula'),
             'birth_date': validated_data.pop('birth_date'),
+            'photo': validated_data.pop('photo', None), 
         }
         
         user = User.objects.create_user(
