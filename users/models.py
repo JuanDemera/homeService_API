@@ -20,6 +20,7 @@ class UserProfile(models.Model):
     )
     birth_date = models.DateField()
     edad = models.IntegerField(blank=True, null=True)
+    photo = models.URLField(max_length=300, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

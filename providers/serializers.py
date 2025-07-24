@@ -14,6 +14,7 @@ class ProviderRegisterProfileSerializer(serializers.Serializer):
     cedula = serializers.CharField(max_length=20, required=True)
     email = serializers.EmailField(required=False)
     birth_date = serializers.DateField(required=False)
+    photo = serializers.URLField(required=False, allow_null=True)
 
 class ProviderRegisterSerializer(serializers.ModelSerializer):
     user = ProviderRegisterUserSerializer(required=True)
@@ -52,3 +53,40 @@ class ProviderVerificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Provider
         fields = ['action', 'reason']
+
+class RegisterProviderSerializer(serializers.ModelSerializer):
+    firstname = serializers.CharField(max_length=100, write_only=True)
+    lastname = serializers.CharField(max_length=100, write_only=True)
+    email = serializers.EmailField(write_only=True)
+    cedula = serializers.CharField(max_length=20, write_only=True)
+    birth_date = serializers.DateField(write_only=True)
+    photo = serializers.URLField(required=False, allow_null=True)
+
+    class Meta:
+        model = User
+        fields = [
+            'username', 'phone', 'password', 'firstname', 'lastname',
+            'email', 'cedula', 'birth_date', 'photo'
+        ]
+        extra_kwargs = {
+            'password': {'write_only': True},
+        }
+
+    def create(self, validated_data):
+        profile_data = {
+            'firstname': validated_data.pop('firstname'),
+            'lastname': validated_data.pop('lastname'),
+            'email': validated_data.pop('email'),
+            'cedula': validated_data.pop('cedula'),
+            'birth_date': validated_data.pop('birth_date'),
+            'photo': validated_data.pop('photo', None),
+        }
+        user = User.objects.create_user(
+            username=validated_data['username'],
+            phone=validated_data['phone'],
+            password=validated_data['password'],
+            role=User.Role.PROVIDER,
+            is_verified=True
+        )
+        UserProfile.objects.create(user=user, **profile_data)
+        return user
