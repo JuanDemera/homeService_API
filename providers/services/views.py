@@ -36,5 +36,5 @@ class ServiceCreateView(generics.CreateAPIView):
 
 class CategoryCreateView(generics.CreateAPIView):
     serializer_class = CategoryCreateSerializer
-    permission_classes = [permissions.IsAdminUser]  # Solo admin puede crear
+    permission_classes = [permissions.AllowAny]
     queryset = Category.objects.all()
