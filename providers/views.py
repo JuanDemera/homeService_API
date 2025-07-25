@@ -9,17 +9,13 @@ from .serializers import (
     ProviderRegisterSerializer,
     ProviderVerificationRequestSerializer,
     ProviderVerificationSerializer,
-    ProviderSerializer  # Debes tener este serializer
+    ProviderSerializer,
+    ProviderProfileSerializer
 )
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 
 class ProviderRegisterView(generics.CreateAPIView):
-    """
-    Registro inicial de proveedores (sin autenticación requerida)
-    Campos obligatorios: username, teléfono, cédula, nombres, apellidos
-    Campos opcionales: documentos (fotos de cédula)
-    """
     serializer_class = ProviderRegisterSerializer
     permission_classes = [AllowAny]
 
@@ -28,12 +24,10 @@ class ProviderRegisterView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        # Datos del formulario
         user_data = serializer.validated_data.pop('user')
         profile_data = serializer.validated_data.pop('profile')
         documents = serializer.validated_data.pop('documents', {})
 
-        # Crear usuario
         user = User.objects.create_user(
             username=user_data['username'],
             phone=user_data['phone'],
@@ -41,7 +35,6 @@ class ProviderRegisterView(generics.CreateAPIView):
             role=User.Role.PROVIDER
         )
 
-        # Crear perfil
         UserProfile.objects.create(
             user=user,
             firstname=profile_data['firstname'],
@@ -51,7 +44,6 @@ class ProviderRegisterView(generics.CreateAPIView):
             birth_date=profile_data.get('birth_date', date(2000, 1, 1))
         )
 
-        # Crear proveedor
         provider = Provider.objects.create(
             user=user,
             verification_documents=documents,
@@ -59,7 +51,6 @@ class ProviderRegisterView(generics.CreateAPIView):
             bio=serializer.validated_data.get('bio', "")
         )
 
-        # Generar tokens
         refresh = RefreshToken.for_user(user)
 
         return Response({
@@ -78,9 +69,6 @@ class ProviderRegisterView(generics.CreateAPIView):
         }, status=status.HTTP_201_CREATED)
 
 class ProviderVerificationRequestView(generics.UpdateAPIView):
-    """
-    Vista para que el proveedor envíe/actualice sus documentos de verificación
-    """
     serializer_class = ProviderVerificationRequestSerializer
     permission_classes = [IsAuthenticated]
 
@@ -98,7 +86,6 @@ class ProviderVerificationRequestView(generics.UpdateAPIView):
         serializer = self.get_serializer(provider, data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        # Actualizar documentos y cambiar estado a PENDING
         provider = serializer.save()
         provider.verification_status = Provider.VerificationStatus.PENDING
         provider.save()
@@ -110,9 +97,6 @@ class ProviderVerificationRequestView(generics.UpdateAPIView):
         })
 
 class ProviderVerificationAdminView(generics.UpdateAPIView):
-    """
-    Vista para que el admin apruebe/rechace proveedores
-    """
     queryset = Provider.objects.all()
     serializer_class = ProviderVerificationSerializer
     permission_classes = [IsAdminUser]
@@ -124,7 +108,7 @@ class ProviderVerificationAdminView(generics.UpdateAPIView):
         
         if action == 'approve':
             provider.verification_status = Provider.VerificationStatus.APPROVED
-            provider.user.role = User.Role.PROVIDER  # Cambiar rol definitivo
+            provider.user.role = User.Role.PROVIDER
             provider.user.save()
             provider.save()
             message = "Proveedor aprobado exitosamente"
@@ -149,9 +133,26 @@ class ProviderUpdateView(generics.UpdateAPIView):
     serializer_class = ProviderSerializer
     permission_classes = [permissions.IsAdminUser]
     queryset = Provider.objects.all()
-    lookup_field = 'id'  # O usa 'pk' si prefieres
+    lookup_field = 'id'
 
 class ProviderListView(generics.ListAPIView):
     serializer_class = ProviderSerializer
     permission_classes = [permissions.IsAdminUser]
     queryset = Provider.objects.all()
+
+# ✅ Nuevo endpoint para perfil propio
+class ProviderProfileView(generics.RetrieveUpdateAPIView):
+    serializer_class = ProviderProfileSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        if not hasattr(self.request.user, 'provider'):
+            return Response({"error": "Perfil de proveedor no encontrado"}, status=404)
+        return self.request.user.provider
+
+# ✅ Endpoint para admin ver perfil por ID
+class ProviderDetailAdminView(generics.RetrieveAPIView):
+    queryset = Provider.objects.select_related('user__profile')
+    serializer_class = ProviderProfileSerializer
+    permission_classes = [permissions.IsAdminUser]
+    lookup_field = 'id'

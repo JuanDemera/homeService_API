@@ -95,3 +95,34 @@ class ProviderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Provider
         fields = '__all__'
+
+# ✅ Nuevo Serializer para perfil
+class ProviderProfileSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+    phone = serializers.CharField(source='user.phone', read_only=True)
+    firstname = serializers.CharField(source='user.profile.firstname')
+    lastname = serializers.CharField(source='user.profile.lastname')
+    email = serializers.EmailField(source='user.profile.email')
+    cedula = serializers.CharField(source='user.profile.cedula')
+    birth_date = serializers.DateField(source='user.profile.birth_date')
+    photo = serializers.URLField(source='user.profile.photo', required=False, allow_null=True)
+
+    class Meta:
+        model = Provider
+        fields = [
+            'id', 'username', 'phone', 'firstname', 'lastname', 'email',
+            'cedula', 'birth_date', 'photo', 'bio', 'verification_status'
+        ]
+
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop('user', {})
+        profile_data = user_data.get('profile', {})
+
+        profile = instance.user.profile
+        for attr, value in profile_data.items():
+            setattr(profile, attr, value)
+        profile.save()
+
+        instance.bio = validated_data.get('bio', instance.bio)
+        instance.save()
+        return instance
