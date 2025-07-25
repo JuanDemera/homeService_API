@@ -33,10 +33,16 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         return token
 
     def validate(self, attrs):
-        data = super().validate(attrs)
+        try:
+            data = super().validate(attrs)
+        except Exception:
+            raise serializers.ValidationError(
+                _('No tiene cuenta registrada'),
+                code='no_account'
+            )
         if not self.user.is_active:
             raise serializers.ValidationError(
-                _('Account disabled, contact support'),
+                _('Usuario inactivo, comuníquese con Home Service'),
                 code='account_disabled'
             )
         if self.user.disabled:
