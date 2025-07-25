@@ -1,6 +1,5 @@
-from rest_framework import generics, status
+from rest_framework import generics, status, permissions
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from django.db import transaction
 from core.models import User
 from users.models import UserProfile
@@ -9,9 +8,11 @@ from datetime import date
 from .serializers import (
     ProviderRegisterSerializer,
     ProviderVerificationRequestSerializer,
-    ProviderVerificationSerializer
+    ProviderVerificationSerializer,
+    ProviderSerializer  # Debes tener este serializer
 )
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 
 class ProviderRegisterView(generics.CreateAPIView):
     """
@@ -143,3 +144,14 @@ class ProviderVerificationAdminView(generics.UpdateAPIView):
             "message": message,
             "verification_status": provider.verification_status
         })
+
+class ProviderUpdateView(generics.UpdateAPIView):
+    serializer_class = ProviderSerializer
+    permission_classes = [permissions.IsAdminUser]
+    queryset = Provider.objects.all()
+    lookup_field = 'id'  # O usa 'pk' si prefieres
+
+class ProviderListView(generics.ListAPIView):
+    serializer_class = ProviderSerializer
+    permission_classes = [permissions.IsAdminUser]
+    queryset = Provider.objects.all()

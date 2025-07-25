@@ -38,3 +38,8 @@ class CategoryCreateView(generics.CreateAPIView):
     serializer_class = CategoryCreateSerializer
     permission_classes = [permissions.IsAdminUser]  
     queryset = Category.objects.all()
+
+class AdminServiceCreateView(generics.CreateAPIView):
+    serializer_class = ServiceCreateSerializer
+    permission_classes = [permissions.IsAdminUser]
+    queryset = Service.objects.all()

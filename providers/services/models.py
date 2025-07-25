@@ -36,6 +36,7 @@ class Service(models.Model):
     )
     duration_minutes = models.PositiveIntegerField()
     is_active = models.BooleanField(default=True)
+    photo = models.URLField(max_length=300, blank=True, null=True)  # <--- Nuevo campo
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

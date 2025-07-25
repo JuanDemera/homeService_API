@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from decimal import Decimal
-from .models import Category, Service
+from .models import Category, Service, Provider
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -17,12 +17,14 @@ class ProviderServiceSerializer(serializers.ModelSerializer):
         write_only=True
     )
     provider_name = serializers.SerializerMethodField()
+    photo = serializers.URLField(required=False, allow_null=True)  
 
     class Meta:
         model = Service
         fields = [
             'id', 'title', 'description', 'category', 'category_id',
             'price', 'duration_minutes', 'is_active', 'provider_name',
+            'photo', 
             'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at', 'provider_name']
@@ -32,17 +34,19 @@ class ProviderServiceSerializer(serializers.ModelSerializer):
         return obj.provider.user.username
 
 class ServiceCreateSerializer(serializers.ModelSerializer):
+    provider = serializers.PrimaryKeyRelatedField(queryset=Provider.objects.all())  # <--- Nuevo campo
     price = serializers.DecimalField(
         max_digits=10,
         decimal_places=2,
         min_value=Decimal('0.01')
     )
+    photo = serializers.URLField(required=False, allow_null=True)
 
     class Meta:
         model = Service
         fields = [
-            'title', 'description', 'category', 'price',
-            'duration_minutes', 'is_active'
+            'provider', 'title', 'description', 'category', 'price',
+            'duration_minutes', 'is_active', 'photo'
         ]
         ref_name = 'ServiceCreate'
 

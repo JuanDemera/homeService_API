@@ -90,3 +90,8 @@ class RegisterProviderSerializer(serializers.ModelSerializer):
         )
         UserProfile.objects.create(user=user, **profile_data)
         return user
+
+class ProviderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Provider
+        fields = '__all__'
