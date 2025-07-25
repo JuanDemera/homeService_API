@@ -48,14 +48,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                 code='account_disabled'
             )
         refresh = self.get_token(user)
+        access = refresh.access_token
         return {
             'refresh': str(refresh),
-            'access': str(refresh.access_token),
-            'user': {
-                'id': user.id,
-                'username': user.username,
-                'phone': user.phone,
-                'role': user.role,
-                'is_verified': user.is_verified,
-            }
+            'access': str(access)
         }

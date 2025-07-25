@@ -159,3 +159,8 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]  # solo si tienes archivos
 
 # Clave por defecto para campos AutoField
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+AUTHENTICATION_BACKENDS = [
+    'core.backends.UsernameOrPhoneBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
