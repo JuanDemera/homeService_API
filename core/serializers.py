@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.utils.translation import gettext_lazy as _
+from django.contrib.auth import authenticate
 from core.models import User
 from users.models import UserProfile
 
@@ -22,23 +23,21 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at']
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        token['user_id'] = str(user.id)
+        token['role'] = user.role
+        token['is_verified'] = user.is_verified
+        token['username'] = user.username
+        token['phone'] = user.phone
+        return token
+
     def validate(self, attrs):
         username = attrs.get('username')
-        phone = attrs.get('phone')
-        user = None
-
-        if username:
-            try:
-                user = User.objects.get(username=username)
-            except User.DoesNotExist:
-                pass
-        elif phone:
-            try:
-                user = User.objects.get(phone=phone)
-            except User.DoesNotExist:
-                pass
-
-        if not user:
+        password = attrs.get('password')
+        user = authenticate(username=username, password=password)
+        if user is None:
             raise serializers.ValidationError(
                 {'detail': _('No tiene cuenta registrada')},
                 code='no_account'
@@ -48,5 +47,15 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                 {'detail': _('Usuario inactivo, comuníquese con Home Service')},
                 code='account_disabled'
             )
-
-        return super().validate(attrs)
+        refresh = self.get_token(user)
+        return {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'phone': user.phone,
+                'role': user.role,
+                'is_verified': user.is_verified,
+            }
+        }
