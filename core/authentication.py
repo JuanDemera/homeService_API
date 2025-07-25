@@ -3,6 +3,7 @@ from rest_framework import exceptions
 from django.utils.translation import gettext_lazy as _
 from django.core.cache import cache
 from core.models import User
+from django.utils import timezone
 
 class CustomJWTAuthentication(JWTAuthentication):
     """
@@ -63,19 +64,27 @@ class CustomJWTAuthentication(JWTAuthentication):
             auth_result = super().authenticate(request)
             if auth_result is None:
                 return None
-                
+
             user, token = auth_result
+
+            # Solo permitir usuarios activos
+            if not user.is_active:
+                raise exceptions.AuthenticationFailed(
+                    _('Usuario inactivo, comuníquese con Home Service'),
+                    code='account_disabled'
+                )
+
             user.save()  # Guarda el último login
-            
-            # Cachear datos del usuario para requests posteriores
+
             cache_key = f"user_{user.id}_data"
             cache.set(cache_key, {
                 'id': user.id,
                 'username': user.username,
                 'role': user.role,
-                'is_verified': user.is_verified
+                'is_verified': user.is_verified,
+                'is_active': user.is_active,
             }, timeout=300)  # 5 minutos
-            
+
             return (user, token)
         except Exception as e:
             raise exceptions.AuthenticationFailed(
