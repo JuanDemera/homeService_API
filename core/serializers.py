@@ -22,33 +22,31 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at']
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-    @classmethod
-    def get_token(cls, user):
-        token = super().get_token(user)
-        token['user_id'] = str(user.id)
-        token['role'] = user.role
-        token['is_verified'] = user.is_verified
-        token['username'] = user.username
-        token['phone'] = user.phone
-        return token
-
     def validate(self, attrs):
-        try:
-            data = super().validate(attrs)
-        except Exception:
+        username = attrs.get('username')
+        phone = attrs.get('phone')
+        user = None
+
+        if username:
+            try:
+                user = User.objects.get(username=username)
+            except User.DoesNotExist:
+                pass
+        elif phone:
+            try:
+                user = User.objects.get(phone=phone)
+            except User.DoesNotExist:
+                pass
+
+        if not user:
             raise serializers.ValidationError(
-                _('No tiene cuenta registrada'),
+                {'detail': _('No tiene cuenta registrada')},
                 code='no_account'
             )
-        if not self.user.is_active:
+        if not user.is_active:
             raise serializers.ValidationError(
-                _('Usuario inactivo, comuníquese con Home Service'),
+                {'detail': _('Usuario inactivo, comuníquese con Home Service')},
                 code='account_disabled'
             )
-        if self.user.disabled:
-            raise serializers.ValidationError(
-                _('Account suspended: ') + (self.user.disabled_reason or _('No reason provided')),
-                code='account_suspended'
-            )
-        self.user.save()
-        return data
+
+        return super().validate(attrs)
