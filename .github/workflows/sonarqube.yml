@@ -25,13 +25,27 @@ jobs:
         sudo apt-get install -y build-essential libffi-dev libssl-dev \
           libxml2-dev libxslt1-dev zlib1g-dev libjpeg-dev libpq-dev \
           libdbus-1-dev libglib2.0-dev libcups2-dev libsystemd-dev \
-          python3-dev pkg-config
+          python3-dev pkg-config distro-info
 
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Run tests
-      run: |
-        pytest --maxfail=1 --disable-warnings -q
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.22.0'
+
+    - name: Install Flutter dependencies
+      run: flutter pub get
+
+    - name: Run Python tests
+      run: pytest --maxfail=1 --disable-warnings -q
+
+    - name: Run Flutter analyzer
+      run: flutter analyze
+
+    - name: Run Flutter tests
+      run: flutter test
+
