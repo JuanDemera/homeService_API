@@ -1,53 +1,37 @@
-name: SonarQube Scan
+name: Build and Test
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
-  sonarQube:
-    name: SonarQube Analysis
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential libffi-dev libssl-dev \
-            libxml2-dev libxslt1-dev zlib1g-dev libjpeg-dev libpq-dev \
-            libdbus-1-dev libcups2-dev libsystemd-dev python3-dev pkg-config
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential libffi-dev libssl-dev \
+          libxml2-dev libxslt1-dev zlib1g-dev libjpeg-dev libpq-dev \
+          libdbus-1-dev libglib2.0-dev libcups2-dev libsystemd-dev \
+          python3-dev pkg-config
 
-      - name: Upgrade pip
-        run: python -m pip install --upgrade pip
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
 
-      - name: Install Python dependencies
-        run: pip install -r requirements.txt
-
-      - name: Download SonarScanner
-        run: |
-          wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
-          unzip sonar-scanner-cli-5.0.1.3006-linux.zip
-
-      - name: Run SonarQube Scanner
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          ./sonar-scanner-5.0.1.3006-linux/bin/sonar-scanner \
-            -Dsonar.projectKey=homeService_backend \
-            -Dsonar.sources=. \
-            -Dsonar.exclusions=**/migrations/**,**/__pycache__/** \
-            -Dsonar.host.url=http://localhost:9000 \
-            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
-
+    - name: Run tests
+      run: |
+        pytest --maxfail=1 --disable-warnings -q
