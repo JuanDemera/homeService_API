@@ -25,7 +25,9 @@ jobs:
         sudo apt-get install -y build-essential libffi-dev libssl-dev \
           libxml2-dev libxslt1-dev zlib1g-dev libjpeg-dev libpq-dev \
           libdbus-1-dev libglib2.0-dev libcups2-dev libsystemd-dev \
-          python3-dev pkg-config distro-info
+          python3-dev pkg-config python3-apt python3-distro-info \
+          ubuntu-drivers-common ubuntu-pro-client ufw \
+          unattended-upgrades usb-creator ssh-import-id
 
     - name: Install Python dependencies
       run: |
