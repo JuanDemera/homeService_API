@@ -5,6 +5,14 @@ import phonenumbers
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 
+# Constantes de error reutilizables para eliminar duplicity
+INVALID_PHONE_ERROR = "Número de teléfono inválido"
+INVALID_OTP_ERROR = "El código OTP debe contener solo números"
+INVALID_EMAIL_ERROR = "Email inválido"
+DUPLICATE_EMAIL_ERROR = "Este email ya está registrado"
+DUPLICATE_CEDULA_ERROR = "Esta cédula ya está registrada"
+INVALID_CEDULA_ERROR = "La cédula debe contener solo números"
+
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
@@ -42,18 +50,18 @@ class OTPSerializer(serializers.Serializer):
         try:
             phone = phonenumbers.parse(value, None)
             if not phonenumbers.is_valid_number(phone):
-                raise serializers.ValidationError("Número de teléfono inválido")
+                raise serializers.ValidationError(INVALID_PHONE_ERROR)
             return phonenumbers.format_number(phone, phonenumbers.PhoneNumberFormat.E164)
         except Exception as e:
             print("Error phonenumbers:", e)  # Para debug
-            raise serializers.ValidationError("Número de teléfono inválido")
+            raise serializers.ValidationError(INVALID_PHONE_ERROR)
 
 class VerifyOTPSerializer(OTPSerializer):  
     otp = serializers.CharField(required=True, min_length=4, max_length=6)
 
     def validate_otp(self, value):
         if not value.isdigit():
-            raise serializers.ValidationError("El código OTP debe contener solo números")
+            raise serializers.ValidationError(INVALID_OTP_ERROR)
         return value
 
 class RegisterConsumerSerializer(serializers.ModelSerializer):
@@ -78,25 +86,25 @@ class RegisterConsumerSerializer(serializers.ModelSerializer):
         try:
             phone = phonenumbers.parse(value, None)
             if not phonenumbers.is_valid_number(phone):
-                raise serializers.ValidationError("Número de teléfono inválido")
+                raise serializers.ValidationError(INVALID_PHONE_ERROR)
             return phonenumbers.format_number(phone, phonenumbers.PhoneNumberFormat.E164)
-        except Exception as e:
-            raise serializers.ValidationError("Número de teléfono inválido")
+        except Exception:
+            raise serializers.ValidationError(INVALID_PHONE_ERROR)
 
     def validate_email(self, value):
         try:
             validate_email(value)
             if UserProfile.objects.filter(email__iexact=value).exists():
-                raise serializers.ValidationError("Este email ya está registrado")
+                raise serializers.ValidationError(DUPLICATE_EMAIL_ERROR)
             return value.lower()
         except ValidationError:
-            raise serializers.ValidationError("Email inválido")
+            raise serializers.ValidationError(INVALID_EMAIL_ERROR)
 
     def validate_cedula(self, value):
         if not value.isdigit():
-            raise serializers.ValidationError("La cédula debe contener solo números")
+            raise serializers.ValidationError(INVALID_CEDULA_ERROR)
         if UserProfile.objects.filter(cedula=value).exists():
-            raise serializers.ValidationError("Esta cédula ya está registrada")
+            raise serializers.ValidationError(DUPLICATE_CEDULA_ERROR)
         return value
 
     def create(self, validated_data):
