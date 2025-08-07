@@ -21,15 +21,14 @@ jobs:
 
     - name: Install system dependencies
       run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential libffi-dev libssl-dev \
-          libxml2-dev libxslt1-dev zlib1g-dev libjpeg-dev libpq-dev \
-          libdbus-1-dev libglib2.0-dev libcups2-dev libsystemd-dev \
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential python3-dev pkg-config gettext \
+          libffi-dev libssl-dev zlib1g-dev libjpeg-dev libpq-dev \
+          libxml2-dev libxslt1-dev \
+          libdbus-1-dev libglib2.0-dev libsystemd-dev libcups2-dev \
           libcairo2-dev libgirepository1.0-dev gobject-introspection \
-          libnacl-dev libgnutls28-dev libgpg-error-dev libgpgme-dev \
-          python3-dev pkg-config gettext
-
-
+          libgnutls28-dev libgpg-error-dev libgpgme-dev libnacl-dev
 
     - name: Install Python dependencies
       run: |
@@ -38,3 +37,4 @@ jobs:
 
     - name: Run tests
       run: pytest --maxfail=1 --disable-warnings -q
+
