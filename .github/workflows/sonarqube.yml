@@ -1,4 +1,4 @@
-name: Python CI
+name: SonarQube Inspection
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  sonar:
     runs-on: ubuntu-latest
 
     steps:
@@ -19,27 +19,19 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Install system dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          build-essential python3-dev pkg-config gettext \
-          libffi-dev libssl-dev zlib1g-dev libjpeg-dev libpq-dev \
-          libxml2-dev libxslt1-dev \
-          libdbus-1-dev libglib2.0-dev libsystemd-dev libcups2-dev \
-          libcairo2-dev libgirepository1.0-dev gobject-introspection \
-          libgnutls28-dev libgpg-error-dev libgpgme-dev libnacl-dev \
-          duplicity
-
-    - name: Install Python dependencies
+    - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install pytest
 
-    - name: Run tests
-      run: pytest --maxfail=1 --disable-warnings -q
+    - name: Install SonarScanner
+      run: |
+        curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
+        unzip sonar-scanner.zip -d $HOME/sonar-scanner
+        echo "$HOME/sonar-scanner/sonar-scanner-5.0.1.3006-linux/bin" >> $GITHUB_PATH
 
+    - name: Run SonarQube analysis
+      run: sonar-scanner
 
     - name: Run tests
       run: pytest --maxfail=1 --disable-warnings -q
