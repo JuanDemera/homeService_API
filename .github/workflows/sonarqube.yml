@@ -39,12 +39,14 @@ jobs:
           unzip sonar-scanner-cli-7.2.0.5079-linux-x64.zip
           echo "$PWD/sonar-scanner-7.2.0.5079-linux-x64/bin" >> $GITHUB_PATH
 
-      - name: Ejecutar análisis SonarQube
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: Crear archivo sonar-project.properties
         run: |
-          sonar-scanner \
-            -Dsonar.projectKey=homeService_API \
-            -Dsonar.sources=. \
-            -Dsonar.host.url=http://localhost:9000 \
-            -Dsonar.token=$SONAR_TOKEN
+          echo "sonar.projectKey=homeService_API" > sonar-project.properties
+          echo "sonar.sources=." >> sonar-project.properties
+          echo "sonar.host.url=http://localhost:9000" >> sonar-project.properties
+          echo "sonar.token=${{ secrets.SONAR_TOKEN }}" >> sonar-project.properties
+
+      - name: Ejecutar análisis SonarQube
+        run: |
+          sonar-scanner
+
