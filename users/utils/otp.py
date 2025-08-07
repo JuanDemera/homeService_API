@@ -1,7 +1,7 @@
-import random
+import secrets
 
 def generate_otp(length=6):
     """
-    Genera un OTP numérico del largo especificado
+    Genera un OTP numérico del largo especificado, usando un generador seguro
     """
-    return ''.join([str(random.randint(0, 9)) for _ in range(length)])
+    return ''.join([str(secrets.randbelow(10)) for _ in range(length)])
