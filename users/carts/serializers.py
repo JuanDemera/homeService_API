@@ -8,6 +8,7 @@ class ServiceSerializer(serializers.ModelSerializer):
         model = Service
         fields = ['id', 'title', 'price', 'duration_minutes']
 
+
 class CartItemSerializer(serializers.ModelSerializer):
     service = ServiceSerializer(read_only=True)
     service_id = serializers.PrimaryKeyRelatedField(
@@ -24,6 +25,7 @@ class CartItemSerializer(serializers.ModelSerializer):
 
     def get_total_price(self, obj) -> Decimal:
         return obj.total_price
+
 
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True, read_only=True)
