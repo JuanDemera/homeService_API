@@ -4,8 +4,8 @@ from providers.services.models import Service
 
 class Cart(models.Model):
     user = models.OneToOneField(
-        User, 
-        on_delete=models.CASCADE, 
+        User,
+        on_delete=models.CASCADE,
         related_name='cart'
     )
     created_at = models.DateTimeField(auto_now_add=True)
@@ -29,14 +29,15 @@ class Cart(models.Model):
     def subtotal(self):
         return sum(item.total_price for item in self.items.all())
 
+
 class CartItem(models.Model):
     cart = models.ForeignKey(
-        Cart, 
-        on_delete=models.CASCADE, 
+        Cart,
+        on_delete=models.CASCADE,
         related_name='items'
     )
     service = models.ForeignKey(
-        Service, 
+        Service,
         on_delete=models.CASCADE,
         related_name='cart_items'
     )
