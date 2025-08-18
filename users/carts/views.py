@@ -53,7 +53,7 @@ class AddToCartView(generics.GenericAPIView):
         except Service.DoesNotExist:
             raise NotFound("El servicio no existe")
 
-        if not service.is_available:
+        if not service.is_active:  
             raise PermissionDenied("Este servicio no está disponible actualmente")
 
         cart, _ = Cart.objects.get_or_create(user=request.user)

@@ -42,6 +42,90 @@ class GuestSerializer(serializers.ModelSerializer):
             'role': {'read_only': True}
         }
 
+# Serializer para obtener el perfil completo del usuario consumer
+class ConsumerProfileSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+    phone = serializers.CharField(source='user.phone', read_only=True)
+    role = serializers.CharField(source='user.role', read_only=True)
+    
+    class Meta:
+        model = UserProfile
+        fields = [
+            'username', 'phone', 'role', 'firstname', 'lastname', 
+            'email', 'cedula', 'birth_date', 'edad', 'photo'
+        ]
+        read_only_fields = ['edad']
+
+# Serializer para actualizar el perfil del usuario consumer
+class UpdateConsumerProfileSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username')
+    phone = serializers.CharField(source='user.phone')
+    
+    class Meta:
+        model = UserProfile
+        fields = [
+            'username', 'phone', 'firstname', 'lastname', 
+            'email', 'cedula', 'birth_date'
+        ]
+
+    def validate_phone(self, value):
+        try:
+            phone = phonenumbers.parse(value, None)
+            if not phonenumbers.is_valid_number(phone):
+                raise serializers.ValidationError(INVALID_PHONE_ERROR)
+            return phonenumbers.format_number(phone, phonenumbers.PhoneNumberFormat.E164)
+        except Exception:
+            raise serializers.ValidationError(INVALID_PHONE_ERROR)
+
+    def validate_email(self, value):
+        try:
+            validate_email(value)
+            # Verificar que el email no esté en uso por otro usuario
+            if UserProfile.objects.filter(email__iexact=value).exclude(user=self.instance.user).exists():
+                raise serializers.ValidationError(DUPLICATE_EMAIL_ERROR)
+            return value.lower()
+        except ValidationError:
+            raise serializers.ValidationError(INVALID_EMAIL_ERROR)
+
+    def validate_cedula(self, value):
+        if not value.isdigit():
+            raise serializers.ValidationError(INVALID_CEDULA_ERROR)
+        # Verificar que la cédula no esté en uso por otro usuario
+        if UserProfile.objects.filter(cedula=value).exclude(user=self.instance.user).exists():
+            raise serializers.ValidationError(DUPLICATE_CEDULA_ERROR)
+        return value
+
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop('user', {})
+        
+        # Actualizar datos del usuario
+        if user_data:
+            user = instance.user
+            if 'username' in user_data:
+                user.username = user_data['username']
+            if 'phone' in user_data:
+                user.phone = user_data['phone']
+            user.save()
+        
+        # Actualizar datos del perfil
+        return super().update(instance, validated_data)
+
+# Serializer para cambiar contraseña
+class ChangePasswordSerializer(serializers.Serializer):
+    current_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True, min_length=6)
+
+    def validate_current_password(self, value):
+        user = self.context['request'].user
+        if not user.check_password(value):
+            raise serializers.ValidationError("La contraseña actual es incorrecta")
+        return value
+
+    def validate_new_password(self, value):
+        if len(value) < 6:
+            raise serializers.ValidationError("La nueva contraseña debe tener al menos 6 caracteres")
+        return value
+
 class OTPSerializer(serializers.Serializer):
     phone = serializers.CharField(required=True)
 
@@ -126,4 +210,4 @@ class RegisterConsumerSerializer(serializers.ModelSerializer):
         )
         
         UserProfile.objects.create(user=user, **profile_data)
-        return user
+        return user 
