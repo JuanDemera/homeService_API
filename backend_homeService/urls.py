@@ -56,6 +56,9 @@ urlpatterns = [
     
     # Image Storage
     path('api/images/', include('image_storage.urls')),
+    
+    # Addresses
+    path('api/addresses/', include('addresses.urls')),
 ]
 
 if settings.DEBUG:

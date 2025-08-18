@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'providers.services',
     'providers.fee_policies',
     'image_storage',
+    'addresses',
 ]
 
 MIDDLEWARE = [

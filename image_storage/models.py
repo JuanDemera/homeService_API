@@ -76,7 +76,7 @@ class ServiceImage(models.Model):
         ordering = ['-is_primary', '-created_at']
     
     def __str__(self):
-        return f"Imagen de {self.service.name}"
+        return f"Imagen de servicio {self.service_id}"
     
     def save(self, *args, **kwargs):
         # Si esta imagen se marca como principal, desmarcar las demás
