@@ -53,7 +53,11 @@ class AddToCartView(generics.GenericAPIView):
         except Service.DoesNotExist:
             raise NotFound("El servicio no existe")
 
+<<<<<<< HEAD
         if not service.is_active:  
+=======
+        if not service.is_active:
+>>>>>>> 97132eed5207fd1a5c615ca455ef5611cf5573c6
             raise PermissionDenied("Este servicio no está disponible actualmente")
 
         cart, _ = Cart.objects.get_or_create(user=request.user)
@@ -112,3 +116,4 @@ class RemoveFromCartView(generics.GenericAPIView):
             {"message": "Servicio eliminado del carrito", "cart": CartSerializer(cart).data},
             status=status.HTTP_200_OK
         )
+
