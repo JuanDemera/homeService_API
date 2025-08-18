@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'providers.payments',
     'providers.services',
     'providers.fee_policies',
+    'image_storage',
 ]
 
 MIDDLEWARE = [
@@ -156,6 +157,10 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]  # solo si tienes archivos estáticos propios
+
+# Configuración de archivos media (imágenes subidas)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Clave por defecto para campos AutoField
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

@@ -53,9 +53,13 @@ urlpatterns = [
     path('api/providers/', include('providers.urls')),
     path('api/services/', include('providers.services.urls')),
     path('api/payments/', include('providers.payments.urls')),
+    
+    # Image Storage
+    path('api/images/', include('image_storage.urls')),
 ]
 
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 
