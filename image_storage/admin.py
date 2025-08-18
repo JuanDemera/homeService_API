@@ -26,9 +26,9 @@ class UserProfileImageAdmin(admin.ModelAdmin):
 
 @admin.register(ServiceImage)
 class ServiceImageAdmin(admin.ModelAdmin):
-    list_display = ['service', 'image_preview', 'is_primary', 'file_size_display', 'created_at', 'is_active']
+    list_display = ['service_id', 'image_preview', 'is_primary', 'file_size_display', 'created_at', 'is_active']
     list_filter = ['is_primary', 'is_active', 'created_at']
-    search_fields = ['service__name', 'service__provider__user__username']
+    search_fields = ['service_id']
     readonly_fields = ['created_at', 'updated_at', 'image_preview']
     list_editable = ['is_primary']
     

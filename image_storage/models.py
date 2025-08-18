@@ -17,7 +17,7 @@ def user_profile_image_path(instance, filename):
 def service_image_path(instance, filename):
     """Genera la ruta para las imágenes de servicios"""
     ext = filename.split('.')[-1]
-    filename = f"service_{instance.service.id}_{uuid.uuid4().hex[:8]}.{ext}"
+    filename = f"service_{instance.service_id}_{uuid.uuid4().hex[:8]}.{ext}"
     return os.path.join('services', filename)
 
 class UserProfileImage(models.Model):
@@ -45,11 +45,21 @@ class UserProfileImage(models.Model):
         if self.image:
             if os.path.isfile(self.image.path):
                 os.remove(self.image.path)
+            
+            # Limpiar el campo photo en UserProfile
+            try:
+                from users.models import UserProfile
+                user_profile = UserProfile.objects.get(user=self.user)
+                user_profile.photo = None
+                user_profile.save()
+            except UserProfile.DoesNotExist:
+                pass  # Si no existe el perfil, no hacer nada
+                
         super().delete(*args, **kwargs)
 
 class ServiceImage(models.Model):
     """Modelo para almacenar imágenes de servicios"""
-    service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='images')
+    service_id = models.IntegerField(help_text="ID del servicio")
     image = models.ImageField(
         upload_to=service_image_path,
         validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png', 'webp'])],
@@ -72,7 +82,7 @@ class ServiceImage(models.Model):
         # Si esta imagen se marca como principal, desmarcar las demás
         if self.is_primary:
             ServiceImage.objects.filter(
-                service=self.service,
+                service_id=self.service_id,
                 is_primary=True
             ).exclude(pk=self.pk).update(is_primary=False)
         super().save(*args, **kwargs)

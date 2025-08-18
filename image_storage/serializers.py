@@ -75,6 +75,21 @@ class UserProfileImageSerializer(serializers.ModelSerializer):
         instance.image = validated_data['image']
         instance.save()
         
+        # Actualizar el campo photo en UserProfile
+        try:
+            from users.models import UserProfile
+            user_profile = UserProfile.objects.get(user=user)
+            request = self.context.get('request')
+            if request:
+                # Construir URL absoluta
+                photo_url = request.build_absolute_uri(instance.image.url)
+            else:
+                photo_url = instance.image.url
+            user_profile.photo = photo_url
+            user_profile.save()
+        except UserProfile.DoesNotExist:
+            pass  # Si no existe el perfil, no hacer nada
+        
         # Registrar en el log
         ImageUploadLog.objects.create(
             user=user,
@@ -83,6 +98,49 @@ class UserProfileImageSerializer(serializers.ModelSerializer):
             file_size=instance.image.size,
             success=True
         )
+        
+        return instance
+    
+    def update(self, instance, validated_data):
+        """Actualizar la imagen de perfil"""
+        # Si se proporciona una nueva imagen
+        if 'image' in validated_data:
+            # Eliminar el archivo anterior si existe
+            if instance.image:
+                try:
+                    if os.path.isfile(instance.image.path):
+                        os.remove(instance.image.path)
+                except Exception:
+                    pass  # Ignorar errores al eliminar archivo
+            
+            # Actualizar con la nueva imagen
+            instance.image = validated_data['image']
+            instance.save()
+            
+            # Actualizar el campo photo en UserProfile
+            try:
+                from users.models import UserProfile
+                user_profile = UserProfile.objects.get(user=instance.user)
+                request = self.context.get('request')
+                if request:
+                    # Construir URL absoluta
+                    photo_url = request.build_absolute_uri(instance.image.url)
+                else:
+                    photo_url = instance.image.url
+                user_profile.photo = photo_url
+                user_profile.save()
+            except UserProfile.DoesNotExist:
+                pass  # Si no existe el perfil, no hacer nada
+            
+            # Registrar en el log
+            user = self.context['request'].user
+            ImageUploadLog.objects.create(
+                user=user,
+                upload_type='profile',
+                file_name=os.path.basename(instance.image.name),
+                file_size=instance.image.size,
+                success=True
+            )
         
         return instance
 
