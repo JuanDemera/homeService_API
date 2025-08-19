@@ -76,6 +76,7 @@ class ConsumerCreateAppointmentView(generics.CreateAPIView):
         # Agregar información sobre expiración
         if hasattr(self, 'appointment'):
             response.data.update({
+                'id': self.appointment.id,
                 'is_temporary': True,
                 'expires_at': self.appointment.expires_at,
                 'time_until_expiry': self.appointment.time_until_expiry,
