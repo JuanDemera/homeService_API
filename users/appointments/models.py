@@ -35,6 +35,28 @@ class Appointment(models.Model):
         default=Status.TEMPORARY  # Cambiar default a TEMPORARY
     )
     notes = models.TextField(blank=True, null=True)
+    
+    # Campo de dirección para el servicio
+    service_address = models.TextField(
+        blank=True, 
+        null=True,
+        help_text="Dirección donde se prestará el servicio"
+    )
+    service_latitude = models.DecimalField(
+        max_digits=9, 
+        decimal_places=6, 
+        null=True, 
+        blank=True,
+        help_text="Latitud de la dirección del servicio"
+    )
+    service_longitude = models.DecimalField(
+        max_digits=9, 
+        decimal_places=6, 
+        null=True, 
+        blank=True,
+        help_text="Longitud de la dirección del servicio"
+    )
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

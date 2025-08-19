@@ -99,7 +99,10 @@ Content-Type: application/json
     "service": 1,
     "appointment_date": "2025-01-25",
     "appointment_time": "14:30",
-    "notes": "Por favor llegar 10 minutos antes"
+    "notes": "Por favor llegar 10 minutos antes",
+    "service_address": "Av. Amazonas 123, Quito, Ecuador",
+    "service_latitude": -0.2298500,
+    "service_longitude": -78.5249500
 }
 ```
 
@@ -110,6 +113,9 @@ Content-Type: application/json
 
 #### **Campos Opcionales:**
 - `notes` - Notas adicionales (string)
+- `service_address` - Dirección donde se prestará el servicio (string)
+- `service_latitude` - Latitud de la dirección (decimal)
+- `service_longitude` - Longitud de la dirección (decimal)
 
 #### **Validaciones:**
 - La fecha no puede ser en el pasado
@@ -128,6 +134,9 @@ Content-Type: application/json
     "appointment_time": "14:30:00",
     "status": "temporary",
     "notes": "Por favor llegar 10 minutos antes",
+    "service_address": "Av. Amazonas 123, Quito, Ecuador",
+    "service_latitude": "-0.229850",
+    "service_longitude": "-78.524950",
     "created_at": "2025-01-18T10:00:00Z",
     "updated_at": "2025-01-18T10:00:00Z",
     "is_temporary": true,

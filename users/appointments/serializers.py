@@ -24,6 +24,9 @@ class AppointmentSerializer(serializers.ModelSerializer):
             'appointment_time',
             'status',
             'notes',
+            'service_address',
+            'service_latitude',
+            'service_longitude',
             'created_at',
             'updated_at',
             'is_temporary',
@@ -43,7 +46,10 @@ class CreateAppointmentSerializer(serializers.ModelSerializer):
             'service',
             'appointment_date',
             'appointment_time',
-            'notes'
+            'notes',
+            'service_address',
+            'service_latitude',
+            'service_longitude'
         ]
 
     def validate_appointment_date(self, value):
@@ -88,7 +94,10 @@ class UpdateAppointmentSerializer(serializers.ModelSerializer):
         fields = [
             'appointment_date',
             'appointment_time',
-            'notes'
+            'notes',
+            'service_address',
+            'service_latitude',
+            'service_longitude'
         ]
 
     def validate_appointment_date(self, value):
@@ -159,6 +168,9 @@ class AppointmentDetailSerializer(serializers.ModelSerializer):
             'appointment_time',
             'status',
             'notes',
+            'service_address',
+            'service_latitude',
+            'service_longitude',
             'created_at',
             'updated_at',
             'is_temporary',
