@@ -48,11 +48,13 @@ urlpatterns = [
     # Users
     path('api/users/', include('users.urls')),
     path('api/carts/', include('users.carts.urls')),
+    path('api/appointments/', include('users.appointments.urls')),
     
     # Providers
     path('api/providers/', include('providers.urls')),
     path('api/services/', include('providers.services.urls')),
     path('api/payments/', include('providers.payments.urls')),
+    path('api/fee-policies/', include('providers.fee_policies.urls')),
     
     # Image Storage
     path('api/images/', include('image_storage.urls')),
