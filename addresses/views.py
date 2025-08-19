@@ -18,6 +18,8 @@ class AddressListView(generics.ListCreateAPIView):
     
     def get_queryset(self):
         """Obtener direcciones del usuario actual"""
+        if getattr(self, 'swagger_fake_view', False):
+            return Address.objects.none()
         return Address.objects.filter(
             user=self.request.user, 
             is_active=True
@@ -59,6 +61,8 @@ class AddressDetailView(generics.RetrieveUpdateDestroyAPIView):
     
     def get_queryset(self):
         """Obtener dirección del usuario actual"""
+        if getattr(self, 'swagger_fake_view', False):
+            return Address.objects.none()
         return Address.objects.filter(
             user=self.request.user, 
             is_active=True

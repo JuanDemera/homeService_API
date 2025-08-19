@@ -101,6 +101,8 @@ class ServiceImageListCreateView(generics.ListCreateAPIView):
     
     def get_queryset(self):
         """Obtener imágenes del servicio especificado"""
+        if getattr(self, 'swagger_fake_view', False):
+            return ServiceImage.objects.none()
         service_id = self.kwargs.get('service_id')
         return ServiceImage.objects.filter(service_id=service_id, is_active=True)
     
@@ -153,6 +155,8 @@ class ServiceImageDetailView(generics.RetrieveUpdateDestroyAPIView):
     
     def get_queryset(self):
         """Obtener la imagen específica"""
+        if getattr(self, 'swagger_fake_view', False):
+            return ServiceImage.objects.none()
         return ServiceImage.objects.filter(is_active=True)
     
     @swagger_auto_schema(auto_schema=None)
@@ -269,6 +273,8 @@ class ImageUploadLogListView(generics.ListAPIView):
     
     def get_queryset(self):
         """Obtener logs del usuario actual"""
+        if getattr(self, 'swagger_fake_view', False):
+            return ImageUploadLog.objects.none()
         return ImageUploadLog.objects.filter(user=self.request.user)
 
 @api_view(['POST'])

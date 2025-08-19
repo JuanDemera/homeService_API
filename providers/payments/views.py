@@ -19,7 +19,7 @@ class ProviderPaymentListView(generics.ListAPIView):
 
     def get_queryset(self):
         if getattr(self, 'swagger_fake_view', False):
-            return self.queryset
+            return ProviderPayment.objects.none()
         return ProviderPayment.objects.filter(
             provider__user=self.request.user
         ).order_by('-created_at')
@@ -215,6 +215,8 @@ class PaymentHistoryView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return ProviderPayment.objects.none()
         return ProviderPayment.objects.filter(
             provider__user=self.request.user
         ).order_by('-created_at')

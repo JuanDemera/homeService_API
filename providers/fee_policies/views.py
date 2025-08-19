@@ -11,6 +11,8 @@ class FeePolicyListView(generics.ListCreateAPIView):
     filterset_fields = ['category', 'is_active']
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return FeePolicy.objects.none()
         return FeePolicy.objects.all().order_by('-valid_from')
 
     def perform_create(self, serializer):
@@ -26,6 +28,8 @@ class CurrentFeePolicyView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return FeePolicy.objects.none()
         today = timezone.now().date()
         return FeePolicy.objects.filter(
             valid_from__lte=today,

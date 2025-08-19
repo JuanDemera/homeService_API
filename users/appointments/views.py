@@ -22,6 +22,9 @@ class ConsumerAppointmentListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Appointment.objects.none()
+        
         # Solo mostrar appointments no temporales o temporales del usuario
         queryset = Appointment.objects.filter(
             consumer=self.request.user
@@ -93,6 +96,8 @@ class ConsumerAppointmentDetailView(generics.RetrieveAPIView):
     queryset = Appointment.objects.all()
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Appointment.objects.none()
         return Appointment.objects.filter(consumer=self.request.user)
 
 
@@ -103,6 +108,8 @@ class ConsumerUpdateAppointmentView(generics.UpdateAPIView):
     queryset = Appointment.objects.all()
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Appointment.objects.none()
         return Appointment.objects.filter(consumer=self.request.user)
 
     def update(self, request, *args, **kwargs):
@@ -132,6 +139,8 @@ class ConsumerCancelAppointmentView(generics.UpdateAPIView):
     lookup_field = 'pk'
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Appointment.objects.none()
         return Appointment.objects.filter(consumer=self.request.user)
 
     def update(self, request, *args, **kwargs):
@@ -160,6 +169,8 @@ class MarkAppointmentAsPaidView(generics.UpdateAPIView):
     queryset = Appointment.objects.all()
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Appointment.objects.none()
         return Appointment.objects.filter(consumer=self.request.user)
 
     def update(self, request, *args, **kwargs):
@@ -198,6 +209,9 @@ class ProviderAppointmentListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Appointment.objects.none()
+        
         # Solo mostrar appointments no temporales para providers
         queryset = Appointment.objects.filter(
             provider=self.request.user
@@ -248,6 +262,8 @@ class ProviderAppointmentDetailView(generics.RetrieveAPIView):
     queryset = Appointment.objects.all()
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Appointment.objects.none()
         return Appointment.objects.filter(provider=self.request.user)
 
 
@@ -258,6 +274,8 @@ class ProviderUpdateAppointmentView(generics.UpdateAPIView):
     lookup_field = 'pk'
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Appointment.objects.none()
         return Appointment.objects.filter(provider=self.request.user)
 
     def update(self, request, *args, **kwargs):
@@ -296,6 +314,9 @@ class ProviderServiceAppointmentsView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Appointment.objects.none()
+        
         service_id = self.kwargs.get('service_id')
         queryset = Appointment.objects.filter(
             provider=self.request.user,

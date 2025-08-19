@@ -30,6 +30,8 @@ class ServiceListView(generics.ListAPIView):
     ordering = ['-created_at']
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Service.objects.none()
         return Service.objects.filter(is_active=True)
 
 
@@ -39,6 +41,8 @@ class ProviderMyServicesView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Service.objects.none()
         if not hasattr(self.request.user, 'provider'):
             raise PermissionDenied("Solo los proveedores pueden ver sus servicios")
         return Service.objects.filter(provider=self.request.user.provider)
