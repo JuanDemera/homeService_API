@@ -187,7 +187,7 @@ Los tests cubren:
 - Validación de imágenes
 - Procesamiento de imágenes
 
-## 🔐 Seguridad
+##  Seguridad
 
 ### Autenticación y Autorización
 - **Autenticación requerida**: Todas las operaciones requieren JWT Token
@@ -195,16 +195,16 @@ Los tests cubren:
 - **Validación de archivos**: Verificación de tipo, contenido y tamaño
 - **Limpieza automática**: Eliminación de archivos físicos al borrar registros
 
-## 📋 Manejo de Casos Sin Imágenes
+##  Manejo de Casos Sin Imágenes
 
-### ✅ Casos Soportados
+###  Casos Soportados
 - **Usuario sin imagen de perfil**: Retorna mensaje informativo y `has_image: false`
 - **Servicio sin imágenes**: Retorna lista vacía y `has_images: false`
 - **Primera subida de imagen**: Crea registro automáticamente
 - **Actualización de imagen**: Reemplaza imagen existente
 - **Eliminación de imagen inexistente**: Retorna 404 con mensaje apropiado
 
-### 📝 Respuestas para Casos Sin Imágenes
+###  Respuestas para Casos Sin Imágenes
 
 #### Usuario Sin Imagen de Perfil
 ```json

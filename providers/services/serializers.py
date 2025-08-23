@@ -41,9 +41,10 @@ class ServiceCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Service
         fields = [
-            'title', 'description', 'category', 'price',
+            'id', 'title', 'description', 'category', 'price',
             'duration_minutes', 'is_active', 'photo'
         ]
+        read_only_fields = ['id']
         ref_name = 'ServiceCreate'
 
 
@@ -67,4 +68,5 @@ class ServiceUpdateSerializer(serializers.ModelSerializer):
 class CategoryCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ['name', 'description', 'icon_url', 'is_active']
+        fields = ['id', 'name', 'description', 'icon_url', 'is_active']
+        read_only_fields = ['id']

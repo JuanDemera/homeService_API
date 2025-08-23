@@ -197,6 +197,12 @@ class UpdateConsumerProfileView(APIView):
         operation_description="Actualiza el perfil del usuario consumer autenticado."
     )
     def put(self, request):
+        return self._update_profile(request)
+    
+    def patch(self, request):
+        return self._update_profile(request)
+    
+    def _update_profile(self, request):
         try:
             # Verificar que el usuario sea consumer
             if request.user.role != User.Role.CONSUMER:

@@ -10,7 +10,8 @@ from .serializers import (
     ProviderVerificationRequestSerializer,
     ProviderVerificationSerializer,
     ProviderSerializer,
-    ProviderProfileSerializer
+    ProviderProfileSerializer,
+    ProviderAdminSerializer
 )
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
@@ -101,21 +102,18 @@ class ProviderVerificationAdminView(generics.UpdateAPIView):
     serializer_class = ProviderVerificationSerializer
     permission_classes = [IsAdminUser]
     lookup_field = 'user__phone'
+    lookup_url_kwarg = 'phone'
 
     def update(self, request, *args, **kwargs):
         provider = self.get_object()
         action = request.data.get('action')
         
         if action == 'approve':
-            provider.verification_status = Provider.VerificationStatus.APPROVED
-            provider.user.role = User.Role.PROVIDER
-            provider.user.save()
-            provider.save()
+            provider.approve_provider(approved_by=request.user)
             message = "Proveedor aprobado exitosamente"
         elif action == 'reject':
-            provider.verification_status = Provider.VerificationStatus.REJECTED
-            provider.rejection_reason = request.data.get('reason', '')
-            provider.save()
+            reason = request.data.get('reason', 'Sin razón especificada')
+            provider.reject_provider(reason=reason, rejected_by=request.user)
             message = "Proveedor rechazado"
         else:
             return Response(
@@ -136,7 +134,7 @@ class ProviderUpdateView(generics.UpdateAPIView):
     lookup_field = 'id'
 
 class ProviderListView(generics.ListAPIView):
-    serializer_class = ProviderSerializer
+    serializer_class = ProviderAdminSerializer
     permission_classes = [permissions.IsAdminUser]
     queryset = Provider.objects.all()
 
@@ -147,12 +145,13 @@ class ProviderProfileView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         if not hasattr(self.request.user, 'provider'):
-            return Response({"error": "Perfil de proveedor no encontrado"}, status=404)
+            from django.http import Http404
+            raise Http404("Perfil de proveedor no encontrado")
         return self.request.user.provider
 
 # ✅ Endpoint para admin ver perfil por ID
 class ProviderDetailAdminView(generics.RetrieveAPIView):
     queryset = Provider.objects.select_related('user__profile')
-    serializer_class = ProviderProfileSerializer
+    serializer_class = ProviderAdminSerializer
     permission_classes = [permissions.IsAdminUser]
     lookup_field = 'id'

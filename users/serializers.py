@@ -114,6 +114,7 @@ class UpdateConsumerProfileSerializer(serializers.ModelSerializer):
 class ChangePasswordSerializer(serializers.Serializer):
     current_password = serializers.CharField(required=True)
     new_password = serializers.CharField(required=True, min_length=6)
+    confirm_password = serializers.CharField(required=True)
 
     def validate_current_password(self, value):
         user = self.context['request'].user
@@ -125,6 +126,13 @@ class ChangePasswordSerializer(serializers.Serializer):
         if len(value) < 6:
             raise serializers.ValidationError("La nueva contraseña debe tener al menos 6 caracteres")
         return value
+    
+    def validate(self, data):
+        if data['new_password'] != data['confirm_password']:
+            raise serializers.ValidationError({
+                'confirm_password': 'Las contraseñas no coinciden'
+            })
+        return data
 
 class OTPSerializer(serializers.Serializer):
     phone = serializers.CharField(required=True)
