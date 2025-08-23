@@ -155,13 +155,15 @@ def set_default_address(request, address_id):
 def address_suggestions(request):
     """Obtener sugerencias de direcciones (simulado)"""
     query = request.GET.get('query', '')
-    latitude = request.GET.get('latitude')
-    longitude = request.GET.get('longitude')
     
     if not query:
         return Response({
             'error': 'El parámetro "query" es requerido'
         }, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Obtener coordenadas opcionales para búsqueda localizada
+    latitude = request.GET.get('latitude')
+    longitude = request.GET.get('longitude')
     
     # Simular sugerencias de Ecuador (en producción usarías Google Places API)
     suggestions = [
@@ -226,6 +228,38 @@ def address_suggestions(request):
             }
         }
     ]
+    
+    # Si se proporcionan coordenadas, ordenar sugerencias por proximidad
+    if latitude and longitude:
+        try:
+            user_lat = float(latitude)
+            user_lng = float(longitude)
+            
+            # Calcular distancia simple (fórmula de Haversine simplificada)
+            def calculate_distance(lat1, lng1, lat2, lng2):
+                import math
+                # Conversión a radianes
+                lat1, lng1, lat2, lng2 = map(math.radians, [lat1, lng1, lat2, lng2])
+                # Fórmula de Haversine
+                dlat = lat2 - lat1
+                dlng = lng2 - lng1
+                a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlng/2)**2
+                c = 2 * math.asin(math.sqrt(a))
+                return 6371 * c  # Radio de la Tierra en km
+            
+            # Ordenar sugerencias por distancia
+            for suggestion in suggestions:
+                suggestion_lat = suggestion['geometry']['location']['lat']
+                suggestion_lng = suggestion['geometry']['location']['lng']
+                distance = calculate_distance(user_lat, user_lng, suggestion_lat, suggestion_lng)
+                suggestion['distance_km'] = round(distance, 1)
+            
+            # Ordenar por distancia (más cercana primero)
+            suggestions.sort(key=lambda x: x['distance_km'])
+            
+        except (ValueError, TypeError):
+            # Si las coordenadas no son válidas, mantener orden original
+            pass
     
     return Response({
         'predictions': suggestions,

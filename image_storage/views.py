@@ -61,7 +61,8 @@ class UserProfileImageView(generics.RetrieveUpdateDestroyAPIView):
         
         return Response({
             **serializer.data,
-            'has_image': True
+            'has_image': True,
+            'image_id': instance.id
         }, status=status.HTTP_201_CREATED)
     
     @swagger_auto_schema(auto_schema=None)
@@ -73,7 +74,8 @@ class UserProfileImageView(generics.RetrieveUpdateDestroyAPIView):
         
         return Response({
             **serializer.data,
-            'has_image': True
+            'has_image': True,
+            'image_id': instance.id
         }, status=status.HTTP_200_OK)
     
     @swagger_auto_schema(auto_schema=None)
