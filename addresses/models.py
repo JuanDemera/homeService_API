@@ -16,36 +16,30 @@ class Address(models.Model):
     title = models.CharField(
         max_length=100, 
         help_text="Ej: Casa, Trabajo, Oficina, etc.",
-        null=True,
         blank=True
     )
     
     # Dirección detallada (todos nullables para no romper BD)
     street = models.CharField(
         max_length=200, 
-        null=True, 
         blank=True,
         help_text="Calle y número"
     )
     city = models.CharField(
         max_length=100, 
-        null=True, 
         blank=True
     )
     state = models.CharField(
         max_length=100, 
-        null=True, 
         blank=True
     )
     postal_code = models.CharField(
         max_length=10, 
-        null=True, 
         blank=True
     )
     country = models.CharField(
         max_length=100, 
         default="Ecuador",
-        null=True,
         blank=True,
         help_text="Solo se permiten direcciones de Ecuador"
     )
@@ -54,21 +48,18 @@ class Address(models.Model):
     latitude = models.DecimalField(
         max_digits=9, 
         decimal_places=6, 
-        null=True, 
         blank=True,
         help_text="Latitud capturada por geolocalización"
     )
     longitude = models.DecimalField(
         max_digits=9, 
         decimal_places=6, 
-        null=True, 
         blank=True,
         help_text="Longitud capturada por geolocalización"
     )
     
     # Dirección formateada (para mostrar)
     formatted_address = models.TextField(
-        null=True, 
         blank=True,
         help_text="Dirección completa formateada"
     )
