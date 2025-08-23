@@ -1,6 +1,9 @@
 from django.contrib import admin
 from .models import UserProfileImage, ServiceImage, ImageUploadLog
 
+# Constantes para el admin
+FILE_SIZE_DISPLAY_LABEL = "Tamaño"
+
 @admin.register(UserProfileImage)
 class UserProfileImageAdmin(admin.ModelAdmin):
     list_display = ['user', 'image_preview', 'file_size_display', 'created_at', 'is_active']
@@ -22,7 +25,7 @@ class UserProfileImageAdmin(admin.ModelAdmin):
                 return f"{size_kb/1024:.1f} MB"
             return f"{size_kb:.1f} KB"
         return "N/A"
-    file_size_display.short_description = "Tamaño"
+    file_size_display.short_description = FILE_SIZE_DISPLAY_LABEL
 
 @admin.register(ServiceImage)
 class ServiceImageAdmin(admin.ModelAdmin):
@@ -46,7 +49,7 @@ class ServiceImageAdmin(admin.ModelAdmin):
                 return f"{size_kb/1024:.1f} MB"
             return f"{size_kb:.1f} KB"
         return "N/A"
-    file_size_display.short_description = "Tamaño"
+    file_size_display.short_description = FILE_SIZE_DISPLAY_LABEL
 
 @admin.register(ImageUploadLog)
 class ImageUploadLogAdmin(admin.ModelAdmin):
@@ -63,4 +66,4 @@ class ImageUploadLogAdmin(admin.ModelAdmin):
                 return f"{size_kb/1024:.1f} MB"
             return f"{size_kb:.1f} KB"
         return "N/A"
-    file_size_display.short_description = "Tamaño"
+    file_size_display.short_description = FILE_SIZE_DISPLAY_LABEL

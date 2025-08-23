@@ -6,6 +6,19 @@ import os
 import uuid
 from io import BytesIO
 
+# Excepciones específicas para el servicio de imágenes
+class ImageServiceError(Exception):
+    """Excepción base para errores del servicio de imágenes"""
+    pass
+
+class ImageProcessingError(ImageServiceError):
+    """Error al procesar una imagen"""
+    pass
+
+class ImageValidationError(ImageServiceError):
+    """Error al validar una imagen"""
+    pass
+
 class ImageProcessingService:
     """Servicio para procesar y optimizar imágenes"""
     
@@ -47,7 +60,7 @@ class ImageProcessingService:
             return output
             
         except Exception as e:
-            raise Exception(f"Error al procesar la imagen: {str(e)}")
+            raise ImageProcessingError(f"Error al procesar la imagen: {str(e)}")
     
     @staticmethod
     def create_thumbnail(image_file, size=(150, 150)):
@@ -79,7 +92,7 @@ class ImageProcessingService:
             return output
             
         except Exception as e:
-            raise Exception(f"Error al crear miniatura: {str(e)}")
+            raise ImageProcessingError(f"Error al crear miniatura: {str(e)}")
     
     @staticmethod
     def validate_image_format(image_file):
@@ -95,7 +108,7 @@ class ImageProcessingService:
         try:
             img = Image.open(image_file)
             return img.format.lower() in ['jpeg', 'jpg', 'png', 'webp']
-        except:
+        except (OSError, IOError, ValueError):
             return False
 
 class ImageStorageService:

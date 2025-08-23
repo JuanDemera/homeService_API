@@ -49,7 +49,7 @@ class CustomJWTAuthentication(JWTAuthentication):
                 _('User not found'),
                 code='user_not_found'
             )
-        except Exception as e:
+        except Exception:
             raise exceptions.AuthenticationFailed(
                 _('Authentication failed'),
                 code='authentication_failed'
@@ -86,7 +86,7 @@ class CustomJWTAuthentication(JWTAuthentication):
             }, timeout=300)  # 5 minutos
 
             return (user, token)
-        except Exception as e:
+        except Exception:
             raise exceptions.AuthenticationFailed(
                 _('Error during authentication'),
                 code='authentication_error'
