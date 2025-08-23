@@ -2,6 +2,23 @@ from decimal import Decimal
 from django.utils import timezone
 from .models import ProviderPayment
 
+# Excepciones específicas para el servicio de pagos
+class PaymentServiceError(Exception):
+    """Excepción base para errores del servicio de pagos"""
+    pass
+
+class PaymentCreationError(PaymentServiceError):
+    """Error al crear un registro de pago"""
+    pass
+
+class PaymentNotFoundError(PaymentServiceError):
+    """Error cuando no se encuentra un pago"""
+    pass
+
+class PaymentCompletionError(PaymentServiceError):
+    """Error al completar un pago"""
+    pass
+
 class PaymentService:
     """Servicio para manejar lógica de pagos"""
     
@@ -102,7 +119,7 @@ class PaymentService:
             )
             return payment
         except Exception as e:
-            raise Exception(f"Error creando registro de pago: {str(e)}")
+            raise PaymentCreationError(f"Error creando registro de pago: {str(e)}")
     
     @staticmethod
     def complete_payment(payment_id):
@@ -114,9 +131,9 @@ class PaymentService:
             payment.save()
             return payment
         except ProviderPayment.DoesNotExist:
-            raise Exception("Pago no encontrado")
+            raise PaymentNotFoundError("Pago no encontrado")
         except Exception as e:
-            raise Exception(f"Error completando pago: {str(e)}")
+            raise PaymentCompletionError(f"Error completando pago: {str(e)}")
     
     @staticmethod
     def get_payment_statistics(provider):

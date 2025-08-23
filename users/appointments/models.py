@@ -34,25 +34,22 @@ class Appointment(models.Model):
         choices=Status.choices,
         default=Status.TEMPORARY  # Cambiar default a TEMPORARY
     )
-    notes = models.TextField(blank=True, null=True)
+    notes = models.TextField(blank=True)
     
     # Campo de dirección para el servicio
     service_address = models.TextField(
-        blank=True, 
-        null=True,
+        blank=True,
         help_text="Dirección donde se prestará el servicio"
     )
     service_latitude = models.DecimalField(
         max_digits=9, 
         decimal_places=6, 
-        null=True, 
         blank=True,
         help_text="Latitud de la dirección del servicio"
     )
     service_longitude = models.DecimalField(
         max_digits=9, 
         decimal_places=6, 
-        null=True, 
         blank=True,
         help_text="Longitud de la dirección del servicio"
     )
@@ -63,15 +60,13 @@ class Appointment(models.Model):
     # Campos para manejo de appointments temporales
     is_temporary = models.BooleanField(default=True, help_text="Indica si el appointment es temporal (no pagado)")
     expires_at = models.DateTimeField(
-        null=True, 
         blank=True,
         help_text="Fecha y hora de expiración del appointment temporal"
     )
     payment_completed = models.BooleanField(default=False, help_text="Indica si el pago se completó")
     payment_reference = models.CharField(
         max_length=100, 
-        blank=True, 
-        null=True,
+        blank=True,
         help_text="Referencia del pago asociado"
     )
 

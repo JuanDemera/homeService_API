@@ -4,8 +4,8 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 
 class Category(models.Model):
     name = models.CharField(max_length=50, unique=True)
-    description = models.TextField(blank=True, null=True)
-    icon_url = models.URLField(blank=True, null=True)
+    description = models.TextField(blank=True)
+    icon_url = models.URLField(blank=True)
     is_active = models.BooleanField(default=True)
 
     class Meta:
@@ -23,7 +23,7 @@ class Service(models.Model):
         related_name='services'
     )
     title = models.CharField(max_length=100)
-    description = models.TextField(blank=True, null=True)
+    description = models.TextField(blank=True)
     category = models.ForeignKey(
         Category, 
         on_delete=models.PROTECT,
@@ -36,7 +36,7 @@ class Service(models.Model):
     )
     duration_minutes = models.PositiveIntegerField()
     is_active = models.BooleanField(default=True)
-    photo = models.URLField(max_length=300, blank=True, null=True)  # <--- Nuevo campo
+    photo = models.URLField(max_length=300, blank=True)  # <--- Nuevo campo
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
