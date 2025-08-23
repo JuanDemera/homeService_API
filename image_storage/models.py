@@ -104,7 +104,7 @@ class ImageUploadLog(models.Model):
     file_name = models.CharField(max_length=255)
     file_size = models.PositiveIntegerField(help_text="Tamaño del archivo en bytes")
     success = models.BooleanField(default=True)
-    error_message = models.TextField(blank=True, null=True)
+    error_message = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
