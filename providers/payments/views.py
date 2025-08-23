@@ -29,74 +29,30 @@ class PaymentSimulationView(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
+        """Procesar simulación de pago"""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        cart_id = serializer.validated_data['cart_id']
-        payment_method = serializer.validated_data['payment_method']
-        currency = serializer.validated_data.get('currency', 'USD')
-        appointment_id = serializer.validated_data.get('appointment_id')
+        validated_data = serializer.validated_data
+        cart_id = validated_data['cart_id']
+        payment_method = validated_data['payment_method']
+        currency = validated_data.get('currency', 'USD')
+        appointment_id = validated_data.get('appointment_id')
         
         try:
             with transaction.atomic():
-                # Obtener información del carrito
-                from users.carts.models import Cart
-                cart = Cart.objects.get(id=cart_id)
+                # Validar y obtener carrito
+                cart = self._validate_and_get_cart(cart_id, request.user)
                 
-                # Verificar que el carrito pertenece al usuario
-                if cart.user != request.user:
-                    return Response({
-                        'error': 'No tienes permisos para acceder a este carrito'
-                    }, status=status.HTTP_403_FORBIDDEN)
-                
-                # Obtener el primer item del carrito (asumiendo un servicio por carrito)
-                cart_item = cart.items.first()
-                if not cart_item:
-                    return Response({
-                        'error': 'El carrito está vacío'
-                    }, status=status.HTTP_400_BAD_REQUEST)
-                
-                service = cart_item.service
-                provider = service.provider
-                
-                # Si se proporciona appointment_id, verificar que existe y pertenece al usuario
-                appointment = None
-                if appointment_id:
-                    from users.appointments.models import Appointment
-                    try:
-                        appointment = Appointment.objects.get(id=appointment_id)
-                        if appointment.consumer != request.user:
-                            return Response({
-                                'error': 'No tienes permisos para acceder a este appointment'
-                            }, status=status.HTTP_403_FORBIDDEN)
-                        
-                        # Verificar que el appointment sea temporal y no expirado
-                        if not appointment.is_temporary:
-                            return Response({
-                                'error': 'El appointment ya no es temporal'
-                            }, status=status.HTTP_400_BAD_REQUEST)
-                        
-                        if appointment.is_expired:
-                            return Response({
-                                'error': 'El appointment temporal ha expirado'
-                            }, status=status.HTTP_400_BAD_REQUEST)
-                        
-                        if appointment.payment_completed:
-                            return Response({
-                                'error': 'El appointment ya fue marcado como pagado'
-                            }, status=status.HTTP_400_BAD_REQUEST)
-                        
-                    except Appointment.DoesNotExist:
-                        return Response({
-                            'error': 'El appointment especificado no existe'
-                        }, status=status.HTTP_404_NOT_FOUND)
+                # Validar y obtener appointment si se proporciona
+                appointment = self._validate_appointment(appointment_id, request.user) if appointment_id else None
                 
                 # Calcular montos
                 cart_total = self._calculate_cart_total(cart)
                 service_fee = self._calculate_service_fee(cart_total, payment_method)
                 total_amount = cart_total + service_fee
                 
-                # Generar simulación realista
+                # Generar simulación
                 simulation_data = self._generate_simulation(
                     cart_total=cart_total,
                     service_fee=service_fee,
@@ -105,20 +61,11 @@ class PaymentSimulationView(generics.GenericAPIView):
                     currency=currency
                 )
                 
-                # Marcar appointment como pagado si existe
-                if appointment:
-                    payment_reference = simulation_data['transaction_id']
-                    appointment.mark_as_paid(payment_reference)
+                # Procesar pago exitoso
+                self._process_successful_payment(appointment, simulation_data, cart)
                 
-                # Agregar información del appointment a la respuesta
-                simulation_data.update({
-                    'appointment_id': appointment_id,
-                })
-                
-                # Limpiar el carrito después del pago exitoso
-                cart.items.all().delete()
-                
-                # Serializar respuesta
+                # Preparar respuesta
+                simulation_data['appointment_id'] = appointment_id
                 response_serializer = PaymentSimulationResponseSerializer(simulation_data)
                 
                 return Response(response_serializer.data, status=status.HTTP_200_OK)
@@ -127,10 +74,64 @@ class PaymentSimulationView(generics.GenericAPIView):
             return Response({
                 'error': 'El carrito especificado no existe'
             }, status=status.HTTP_404_NOT_FOUND)
+        except PermissionError as e:
+            return Response({
+                'error': str(e)
+            }, status=status.HTTP_403_FORBIDDEN)
+        except ValueError as e:
+            return Response({
+                'error': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({
                 'error': f'Error en la simulación: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def _validate_and_get_cart(self, cart_id, user):
+        """Validar y obtener el carrito del usuario"""
+        from users.carts.models import Cart
+        cart = Cart.objects.get(id=cart_id)
+        
+        # Verificar que el carrito pertenece al usuario
+        if cart.user != user:
+            raise PermissionError('No tienes permisos para acceder a este carrito')
+        
+        # Verificar que el carrito no esté vacío
+        if not cart.items.exists():
+            raise ValueError('El carrito está vacío')
+        
+        return cart
+    
+    def _validate_appointment(self, appointment_id, user):
+        """Validar y obtener el appointment del usuario"""
+        from users.appointments.models import Appointment
+        appointment = Appointment.objects.get(id=appointment_id)
+        
+        # Verificar que el appointment pertenece al usuario
+        if appointment.consumer != user:
+            raise PermissionError('No tienes permisos para acceder a este appointment')
+        
+        # Verificar que el appointment sea temporal y no expirado
+        if not appointment.is_temporary:
+            raise ValueError('El appointment ya no es temporal')
+        
+        if appointment.is_expired:
+            raise ValueError('El appointment temporal ha expirado')
+        
+        if appointment.payment_completed:
+            raise ValueError('El appointment ya fue marcado como pagado')
+        
+        return appointment
+    
+    def _process_successful_payment(self, appointment, simulation_data, cart):
+        """Procesar el pago exitoso"""
+        # Marcar appointment como pagado si existe
+        if appointment:
+            payment_reference = simulation_data['transaction_id']
+            appointment.mark_as_paid(payment_reference)
+        
+        # Limpiar el carrito después del pago exitoso
+        cart.items.all().delete()
     
     def _calculate_cart_total(self, cart):
         """Calcular el total del carrito"""

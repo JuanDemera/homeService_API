@@ -23,10 +23,10 @@ class ProviderPayment(models.Model):
         max_length=20,
         choices=TransactionType.choices
     )
-    description = models.TextField(blank=True, null=True)
+    description = models.TextField(blank=True)
     is_completed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
-    completed_at = models.DateTimeField(blank=True, null=True)
+    completed_at = models.DateTimeField(blank=True)
 
     class Meta:
         ordering = ['-created_at']

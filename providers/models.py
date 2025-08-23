@@ -16,7 +16,7 @@ class Provider(models.Model):
         on_delete=models.CASCADE, 
         related_name='provider'
     )
-    bio = models.TextField(blank=True, null=True)
+    bio = models.TextField(blank=True)
     rating = models.DecimalField(
         max_digits=3, 
         decimal_places=2, 
@@ -31,7 +31,7 @@ class Provider(models.Model):
         default=VerificationStatus.PENDING
     )
     verification_documents = models.JSONField(default=dict, blank=True)
-    rejection_reason = models.TextField(blank=True, null=True)
+    rejection_reason = models.TextField(blank=True)
     verified_by = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
@@ -39,7 +39,7 @@ class Provider(models.Model):
         blank=True,
         related_name='verified_providers'
     )
-    verified_at = models.DateTimeField(null=True, blank=True)
+    verified_at = models.DateTimeField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
