@@ -2,6 +2,9 @@ from rest_framework import serializers
 from .models import Address
 from core.models import User
 
+# Constantes para mensajes de validación
+ECUADOR_ONLY_MESSAGE = "Solo se permiten direcciones de Ecuador."
+
 class AddressSerializer(serializers.ModelSerializer):
     """Serializer para direcciones"""
     coordinates = serializers.SerializerMethodField()
@@ -30,9 +33,7 @@ class AddressSerializer(serializers.ModelSerializer):
         # Validar que sea Ecuador
         country = data.get('country', 'Ecuador')
         if country and country.lower() not in ['ecuador', 'ec']:
-            raise serializers.ValidationError(
-                "Solo se permiten direcciones de Ecuador."
-            )
+            raise serializers.ValidationError(ECUADOR_ONLY_MESSAGE)
         
         user = self.context['request'].user
         
@@ -75,9 +76,7 @@ class AddressCreateSerializer(serializers.ModelSerializer):
         # Validar que sea Ecuador
         country = data.get('country', 'Ecuador')
         if country and country.lower() not in ['ecuador', 'ec']:
-            raise serializers.ValidationError(
-                "Solo se permiten direcciones de Ecuador."
-            )
+            raise serializers.ValidationError(ECUADOR_ONLY_MESSAGE)
         
         has_coordinates = data.get('latitude') and data.get('longitude')
         has_manual_address = data.get('street') or data.get('city')
@@ -109,9 +108,7 @@ class AddressUpdateSerializer(serializers.ModelSerializer):
         # Validar que sea Ecuador
         country = data.get('country', 'Ecuador')
         if country and country.lower() not in ['ecuador', 'ec']:
-            raise serializers.ValidationError(
-                "Solo se permiten direcciones de Ecuador."
-            )
+            raise serializers.ValidationError(ECUADOR_ONLY_MESSAGE)
         
         # Obtener datos actuales
         instance = self.instance

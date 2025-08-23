@@ -42,18 +42,17 @@ class UserProfileImage(models.Model):
     
     def delete(self, *args, **kwargs):
         # Eliminar el archivo físico cuando se elimina el registro
-        if self.image:
-            if os.path.isfile(self.image.path):
-                os.remove(self.image.path)
-            
-            # Limpiar el campo photo en UserProfile
-            try:
-                from users.models import UserProfile
-                user_profile = UserProfile.objects.get(user=self.user)
-                user_profile.photo = None
-                user_profile.save()
-            except UserProfile.DoesNotExist:
-                pass  # Si no existe el perfil, no hacer nada
+        if self.image and os.path.isfile(self.image.path):
+            os.remove(self.image.path)
+        
+        # Limpiar el campo photo en UserProfile
+        try:
+            from users.models import UserProfile
+            user_profile = UserProfile.objects.get(user=self.user)
+            user_profile.photo = None
+            user_profile.save()
+        except UserProfile.DoesNotExist:
+            pass  # Si no existe el perfil, no hacer nada
                 
         super().delete(*args, **kwargs)
 
@@ -89,9 +88,8 @@ class ServiceImage(models.Model):
     
     def delete(self, *args, **kwargs):
         # Eliminar el archivo físico cuando se elimina el registro
-        if self.image:
-            if os.path.isfile(self.image.path):
-                os.remove(self.image.path)
+        if self.image and os.path.isfile(self.image.path):
+            os.remove(self.image.path)
         super().delete(*args, **kwargs)
 
 class ImageUploadLog(models.Model):
